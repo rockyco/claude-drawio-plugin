@@ -1,0 +1,41 @@
+{
+  "title": "module3_fine_sync - Karatsuba 3-FIR DATAFLOW",
+  "type": "dataflow",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "notes": ["3-stage: split -> 3x parallel hls::FIR(160-tap SP=16) -> combine+detect", "All internal FIFO depths = 2"],
+  "nodes": {
+    "m3d-in": {"name": "data_in", "desc": "640 complex samples (search buffer)"},
+    "m3d-split": {"name": "split_input", "desc": "EXTRACT stage, II=1, splits complex to re/im/re+im"},
+    "m3d-fir1": {"name": "FIR P1 (re * Ic)", "desc": "hls::FIR 160-tap SP=16, coeffs_re.inc"},
+    "m3d-fir2": {"name": "FIR P2 (im * -Qc)", "desc": "hls::FIR 160-tap SP=16, coeffs_im.inc"},
+    "m3d-fir3": {"name": "FIR P3 ((re+im) * (Ic-Qc))", "desc": "hls::FIR 160-tap SP=16, coeffs_sum.inc"},
+    "m3d-combine": {"name": "combine_and_detect", "desc": "COMPUTE stage, Karatsuba recombine + peak detection + CSD refinement"},
+    "m3d-out": {"name": "fineOffset_out", "desc": "index_t scalar control output"}
+  },
+  "stages": [
+    {"name": "split_input", "role": "EXTRACT", "ii": 1},
+    {"name": "fir_p1", "role": "COMPUTE", "ii": 16},
+    {"name": "fir_p2", "role": "COMPUTE", "ii": 16},
+    {"name": "fir_p3", "role": "COMPUTE", "ii": 16},
+    {"name": "combine_and_detect", "role": "COMPUTE", "ii": 1}
+  ],
+  "edges": [
+    {"from": "m3d-in", "to": "m3d-split", "type": "data", "label": "640 complex"},
+    {"from": "m3d-split", "to": "m3d-fir1", "type": "data", "label": "re_stream (d=2)"},
+    {"from": "m3d-split", "to": "m3d-fir2", "type": "data", "label": "im_stream (d=2)"},
+    {"from": "m3d-split", "to": "m3d-fir3", "type": "data", "label": "sum_stream (d=2)"},
+    {"from": "m3d-fir1", "to": "m3d-combine", "type": "data", "label": "fir1_out (d=2)"},
+    {"from": "m3d-fir2", "to": "m3d-combine", "type": "data", "label": "fir2_out (d=2)"},
+    {"from": "m3d-fir3", "to": "m3d-combine", "type": "data", "label": "fir3_out (d=2)"},
+    {"from": "m3d-combine", "to": "m3d-out", "type": "ctrl", "label": "fineOffset (scalar)"}
+  ],
+  "hardware_params": {
+    "fir_taps": 160,
+    "sample_period": 16,
+    "num_fir_instances": 3,
+    "karatsuba": true,
+    "coefficient_files": ["coeffs_re.inc", "coeffs_im.inc", "coeffs_sum.inc"]
+  }
+}

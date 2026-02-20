@@ -1,0 +1,235 @@
+{
+  "title": "wlanSync - System Block Diagram",
+  "type": "system_block",
+  "phase": 1,
+  "version": "5.0.2",
+  "last_enriched_phase": 7,
+  "nodes": {
+    "module0_prefilter": {
+      "name": "M0",
+      "desc": "51-tap symmetric pre-add FIR (FP-SYMCOEFF)",
+      "csr": 1.0
+    },
+    "module1_packet_detect": {
+      "name": "M1",
+      "desc": "L-STF packet detection + write-through ALL samples + startOffset",
+      "csr": 1.0
+    },
+    "module2_coarse_cfo": {
+      "name": "M2",
+      "desc": "Coarse CFO estimation + correction (FSM + circ_buf[2048] + DATAFLOW)",
+      "csr": 4.0,
+      "fsm": true,
+      "dataflow": true
+    },
+    "module3_fine_sync": {
+      "name": "M3",
+      "desc": "Fine timing via L-LTF cross-correlation (3x hls::FIR IP, SP=16)",
+      "csr": 1.0
+    },
+    "module4_fine_cfo_apply": {
+      "name": "M4",
+      "desc": "Fine CFO estimation + correction (FSM + circ_buf[8192])",
+      "csr": 162.7,
+      "fsm": true,
+      "dataflow": true
+    }
+  },
+  "edges": [
+    {"from": "INPUT", "to": "module0_prefilter", "type": "data", "label": "num_samples (26155)"},
+    {"from": "module0_prefilter", "to": "module1_packet_detect", "type": "data", "label": "num_filtered (26105)"},
+    {"from": "module1_packet_detect", "to": "data_duplicator", "type": "data", "label": "ALL num_filtered (26105)"},
+    {"from": "data_duplicator", "to": "module2_coarse_cfo", "type": "data", "label": "data_to_m2 (26105)"},
+    {"from": "data_duplicator", "to": "module4_fine_cfo_apply", "type": "data", "label": "data_to_m4 (26105)"},
+    {"from": "module1_packet_detect", "to": "startOffset_duplicator", "type": "ctrl", "label": "startOffset (index_t)"},
+    {"from": "startOffset_duplicator", "to": "module2_coarse_cfo", "type": "ctrl", "label": "startOffset_to_m2 (async)"},
+    {"from": "startOffset_duplicator", "to": "module4_fine_cfo_apply", "type": "ctrl", "label": "startOffset_to_m4 (async)"},
+    {"from": "module2_coarse_cfo", "to": "module3_fine_sync", "type": "data", "label": "searchLen (640)"},
+    {"from": "module2_coarse_cfo", "to": "OUTPUT", "type": "ctrl", "label": "1 (coarseFreqOff)"},
+    {"from": "module3_fine_sync", "to": "fineOffset_duplicator", "type": "ctrl", "label": "fineOffset (index_t)"},
+    {"from": "fineOffset_duplicator", "to": "module4_fine_cfo_apply", "type": "ctrl", "label": "fineOffset (async)"},
+    {"from": "fineOffset_duplicator", "to": "OUTPUT", "type": "ctrl", "label": "fineOffset (output)"},
+    {"from": "module4_fine_cfo_apply", "to": "OUTPUT", "type": "data", "label": "num_output (26030)"},
+    {"from": "module4_fine_cfo_apply", "to": "OUTPUT", "type": "ctrl", "label": "1 (fineFreqOff)"}
+  ],
+  "patterns": {
+    "module0_prefilter": ["FP-SYMCOEFF", "FP-PRAGMA"],
+    "module1_packet_detect": ["FP-MATOPT1b", "FP-DETECTION", "FP-NOBREAK", "FP-NOBREAK-CE"],
+    "module2_coarse_cfo": ["FP-ASYNC", "FP-SEPARATION", "FP-NCOQUARTER", "FP-PRAGMA"],
+    "module3_fine_sync": ["FP-CORR", "FP-CORR-SP"],
+    "module4_fine_cfo_apply": ["FP-ASYNC", "FP-NCOQUARTER", "FP-SEPARATION"]
+  },
+  "hardware_params": {
+    "module0_prefilter": {
+      "fir_taps": 51,
+      "fir_impl": "symmetric_preadd",
+      "symmetric": true,
+      "coefficient_files": ["filter_coeffs.txt"]
+    },
+    "module1_packet_detect": {
+      "fir_taps": 16,
+      "fir_impl": "manual_shift_reg",
+      "replay_buf_size": 128
+    },
+    "module2_coarse_cfo": {
+      "fir_taps": 16,
+      "fir_impl": "manual_shift_reg",
+      "nco_table_size": 1024,
+      "nco_quarter_wave": true,
+      "extract_len": 160,
+      "circ_buf_size": 2048
+    },
+    "module3_fine_sync": {
+      "fir_taps": 160,
+      "fir_impl": "hls_fir_ip",
+      "sample_period": 16,
+      "num_fir_instances": 3,
+      "karatsuba": true,
+      "coefficient_files": ["coeffs_re.inc", "coeffs_im.inc", "coeffs_sum.inc"]
+    },
+    "module4_fine_cfo_apply": {
+      "circ_buf_size": 8192,
+      "nco_table_size": 1024,
+      "nco_quarter_wave": true,
+      "extract_len": 160
+    }
+  },
+  "control_signals": {
+    "startOffset": {
+      "producer": "module1_packet_detect",
+      "consumers": ["module2_coarse_cfo", "module4_fine_cfo_apply"],
+      "async": true,
+      "type": "index_t",
+      "handling_pattern": "FSM_POLL",
+      "estimated_arrival_cycles": 200
+    },
+    "coarseFreqOff": {
+      "producer": "module2_coarse_cfo",
+      "consumers": ["OUTPUT"],
+      "async": false,
+      "type": "freq_t",
+      "handling_pattern": "INLINE_OUTPUT"
+    },
+    "fineOffset": {
+      "producer": "module3_fine_sync",
+      "consumers": ["module4_fine_cfo_apply"],
+      "async": true,
+      "type": "index_t",
+      "handling_pattern": "FSM_POLL",
+      "estimated_arrival_cycles": 7000
+    },
+    "fineFreqOff": {
+      "producer": "module4_fine_cfo_apply",
+      "consumers": ["OUTPUT"],
+      "async": false,
+      "type": "freq_t",
+      "handling_pattern": "INLINE_OUTPUT"
+    }
+  },
+  "fifo_depths": {
+    "m0_out": {
+      "producer": "module0_prefilter",
+      "consumer": "module1_packet_detect",
+      "depth": 64,
+      "justification": "M0-M1 pipelined, small buffer sufficient",
+      "stream_length": 26105
+    },
+    "data_to_m2": {
+      "producer": "data_duplicator",
+      "consumer": "module2_coarse_cfo",
+      "depth": 2,
+      "justification": "Duplicator inline, minimal buffering",
+      "stream_length": 26105
+    },
+    "data_to_m4": {
+      "producer": "data_duplicator",
+      "consumer": "module4_fine_cfo_apply",
+      "depth": 2,
+      "justification": "Duplicator inline, minimal buffering",
+      "stream_length": 26105
+    },
+    "startOffset_to_m2": {
+      "producer": "startOffset_duplicator",
+      "consumer": "module2_coarse_cfo",
+      "depth": 2,
+      "justification": "Scalar control, single value",
+      "stream_length": 1
+    },
+    "startOffset_to_m4": {
+      "producer": "startOffset_duplicator",
+      "consumer": "module4_fine_cfo_apply",
+      "depth": 2,
+      "justification": "Scalar control, single value",
+      "stream_length": 1
+    },
+    "m2_searchBuffer": {
+      "producer": "module2_coarse_cfo",
+      "consumer": "module3_fine_sync",
+      "depth": 680,
+      "justification": "640 samples + margin; M3 may start late",
+      "stream_length": 640
+    },
+    "corrected_out": {
+      "producer": "module4_fine_cfo_apply",
+      "consumer": "OUTPUT",
+      "depth": 128,
+      "justification": "Output stream, consumer reads as available",
+      "stream_length": 26030
+    }
+  },
+  "latency_budget": {
+    "total_samples": 26155,
+    "target_ratio": 1.5,
+    "per_module": {
+      "module0_prefilter": {
+        "estimated_cycles": 26155,
+        "bottleneck": false,
+        "note": "II=1, passes through at wire speed"
+      },
+      "module1_packet_detect": {
+        "estimated_cycles": 26105,
+        "bottleneck": false,
+        "note": "II=1 (FP-NOBREAK write-through), continuous detection without break"
+      },
+      "module2_coarse_cfo": {
+        "estimated_cycles": 1480,
+        "bottleneck": false,
+        "note": "640 input samples, DATAFLOW overlap, FSM extraction from circ_buf"
+      },
+      "module3_fine_sync": {
+        "estimated_cycles": 6400,
+        "bottleneck": true,
+        "note": "160-tap FIR x 640 samples at SP=16, pipeline bubble for M4"
+      },
+      "module4_fine_cfo_apply": {
+        "estimated_cycles": 26036,
+        "bottleneck": false,
+        "note": "Waits for fineOffset, then processes at II=1"
+      }
+    },
+    "critical_path": ["module0_prefilter", "module1_packet_detect", "module2_coarse_cfo", "module3_fine_sync"],
+    "system_overhead_cycles": 3000,
+    "system_overhead_source": "M4 waits for fineOffset from M3 via M2->M3 path"
+  },
+  "optimization_knobs": {
+    "module3_fine_sync": {
+      "sample_period": {
+        "current": 16,
+        "tried": [
+          {"value": 16, "dsp": 170, "latency": 33065, "status": "MET"},
+          {"value": 10, "dsp": 202, "latency": 37935, "status": "DSP_OVER"},
+          {"value": 8, "dsp": 174, "latency": 36647, "status": "MET"}
+        ],
+        "affects": ["dsp", "latency"],
+        "note": "CSYNTH DSP is SP-independent; only post-impl shows savings. ~10 DSP per SP step."
+      }
+    }
+  },
+  "design_rationale": {
+    "topology": "M1 write-through + data/startOffset duplicators fan to M2 + M4",
+    "fsm_count": "2 (M2 + M4, both consume startOffset async; M4 also consumes fineOffset)",
+    "buffer_strategy": "M2 circ_buf[2048] for FSM extraction, M4 circ_buf[8192] absorbs M2->M3 latency",
+    "m0_symmetric": "51-tap FIR uses h[k]==h[50-k] symmetry, 25 pre-add pairs halve DSP (FP-SYMCOEFF)",
+    "m3_karatsuba": "3x FIR IP implements complex cross-correlation with 25% fewer DSP vs naive 4-FIR"
+  }
+}

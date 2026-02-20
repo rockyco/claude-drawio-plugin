@@ -1,0 +1,27 @@
+{
+  "title": "module3_fine_sync - Architecture",
+  "type": "module_architecture",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "module_pattern": "Case_A",
+  "patterns_applied": ["FP-CORR", "FP-CORR-SP"],
+  "nodes": {
+    "in-data_in": {"name": "data_in", "desc": "Input: complex_t, 640 search buffer samples"},
+    "core": {"name": "module3_fine_sync", "desc": "Karatsuba 3-FIR cross-correlation + peak detection"},
+    "out-fineOffset_out": {"name": "fineOffset_out", "desc": "Output: index_t, fine timing offset scalar"}
+  },
+  "edges": [
+    {"from": "in-data_in", "to": "core", "type": "data"},
+    {"from": "core", "to": "out-fineOffset_out", "type": "ctrl"}
+  ],
+  "dataflow": true,
+  "hardware_params": {
+    "fir_taps": 160,
+    "fir_impl": "hls_fir_ip",
+    "sample_period": 16,
+    "num_fir_instances": 3,
+    "karatsuba": true,
+    "coefficient_files": ["coeffs_re.inc", "coeffs_im.inc", "coeffs_sum.inc"]
+  }
+}

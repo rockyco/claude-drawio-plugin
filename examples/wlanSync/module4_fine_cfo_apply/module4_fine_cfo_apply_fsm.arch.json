@@ -1,0 +1,28 @@
+{
+  "title": "module4_fine_cfo_apply - FSM State Diagram",
+  "type": "fsm_states",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "notes": ["FP-ASYNC pattern: blocking data read + non-blocking control poll in circ_buf[16384]"],
+  "nodes": {
+    "state-wait": {"name": "WAIT_CTRL", "desc": "Phase 1: blocking data_in.read() into circ_buf, non-blocking fineOffset_in poll, II=1"},
+    "state-extract": {"name": "EXTRACT_LLTF", "desc": "Phase 2: read 160 L-LTF samples from circ_buf, II=1"},
+    "state-replay": {"name": "REPLAY_BUF", "desc": "Phase 3: replay passthrough from circ_buf[timed_start..write_idx], II=1"},
+    "state-stream": {"name": "STREAM_THROUGH", "desc": "Phase 4: direct data_in.read() -> passthrough_out, II=1"},
+    "buf-circ": {"name": "circ_buf[16384]", "desc": "Circular buffer, complex_t, BRAM, sized for M3 latency (~10240 cycles at SP=16)"},
+    "port-data-in": {"name": "data_in", "desc": "Input data stream (complex_t)"},
+    "port-lltf": {"name": "lltf_out", "desc": "L-LTF extraction output (160 samples)"},
+    "port-pass": {"name": "passthrough_out", "desc": "Passthrough data output (~26k samples)"},
+    "port-offset": {"name": "offset_out", "desc": "Forwarded fineOffset (index_t scalar)"}
+  },
+  "edges": [
+    {"from": "state-wait", "to": "state-wait", "type": "flow", "label": "!fineOffset_in.empty()=false (self-loop)"},
+    {"from": "state-wait", "to": "state-extract", "type": "flow", "label": "ctrl_received && write_idx >= lltf_end"},
+    {"from": "state-extract", "to": "state-replay", "type": "flow", "label": "i >= EXTRACT_LEN (160)"},
+    {"from": "state-replay", "to": "state-stream", "type": "flow", "label": "i >= replay_end - replay_start"},
+    {"from": "port-data-in", "to": "buf-circ", "type": "data", "label": "Phase 1 write"},
+    {"from": "buf-circ", "to": "port-lltf", "type": "data", "label": "Phase 2 (160 samples)"},
+    {"from": "buf-circ", "to": "port-pass", "type": "data", "label": "Phase 3+4 (~26k samples)"}
+  ]
+}

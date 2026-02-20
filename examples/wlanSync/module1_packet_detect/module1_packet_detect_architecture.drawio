@@ -1,0 +1,140 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="M1 Architecture" id="m1-arch">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1600" pageHeight="1200">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;module1_packet_detect - Architecture&lt;/b&gt;&lt;br&gt;Case B: Single MAIN_LOOP, write-through ALL samples + startOffset control" style="text;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Annotations -->
+        <mxCell id="anno-patterns" value="&lt;font style='font-size:10px;color:#6b7280;'&gt;Patterns: FP-DETECTION (Case B), FP-NOBREAK, FP-NOBREAK-CE, FP-MATOPT1b, FP-MATOPT8, FP-MEMSEL&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="50" width="700" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Data Input Port -->
+        <mxCell id="io-data-in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;26105 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="200" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Main Module Box -->
+        <mxCell id="m1-core" value="&lt;b&gt;module1_packet_detect&lt;/b&gt;&lt;br&gt;&lt;br&gt;Single MAIN_LOOP (N+2 iterations, II=1)&lt;br&gt;&lt;font style='font-size:9px;'&gt;Incremental sliding window autocorrelation&lt;br&gt;Deferred metric pipeline (3-cycle)&lt;br&gt;Conditional detection (SUSTAIN_LEN=24)&lt;br&gt;Unconditional updates (FP-NOBREAK-CE)&lt;br&gt;No break in pipelined loop (FP-NOBREAK)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=11;arcSize=8;verticalAlign=top;spacingTop=5;" vertex="1" parent="1">
+          <mxGeometry x="220" y="120" width="380" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- Internal: data_buf -->
+        <mxCell id="mem-data-buf" value="&lt;b&gt;data_buf[32]&lt;/b&gt;&lt;br&gt;circular BRAM&lt;br&gt;&lt;font style='font-size:9px;color:#6b7280;'&gt;D-sample delay&lt;br&gt;FP-MEMSEL cat 3&lt;br&gt;no PARTITION&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="240" y="200" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Internal: aux_products -->
+        <mxCell id="mem-aux-products" value="&lt;b&gt;Aux Products&lt;/b&gt;&lt;br&gt;3x circ[16]&lt;br&gt;&lt;font style='font-size:9px;color:#6b7280;'&gt;C_re, C_im, P&lt;br&gt;MATOPT8: 0-DSP&lt;br&gt;subtract-old&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="240" y="290" width="130" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Internal: sliding window correlator block -->
+        <mxCell id="hw-sliding-window" value="&lt;b&gt;Sliding Window&lt;/b&gt;&lt;br&gt;autocorrelation&lt;br&gt;&lt;font style='font-size:9px;color:#6b7280;'&gt;W=16, incremental&lt;br&gt;O(1) update per sample&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="195" width="130" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Internal: metric + detection -->
+        <mxCell id="hw-metric-detect" value="&lt;b&gt;Metric + Detect&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px;color:#6b7280;'&gt;TRUNC(18b) -&gt; SQ(3 DSP)&lt;br&gt;-&gt; CMP -&gt; SUSTAIN&lt;br&gt;3-cycle deferred pipeline&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="400" y="285" width="150" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- Data Output Port -->
+        <mxCell id="io-data-out" value="&lt;b&gt;data_out&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;ALL 26105 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="170" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Control Output Port -->
+        <mxCell id="io-startOffset-out" value="&lt;b&gt;startOffset_out&lt;/b&gt;&lt;br&gt;index_t&lt;br&gt;(scalar)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="280" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data edges -->
+        <mxCell id="edge-in-core" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="io-data-in" target="m1-core" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-core-dataout" value="write-through" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m1-core" target="io-data-out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Control edge -->
+        <mxCell id="edge-core-ctrl" value="startOffset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m1-core" target="io-startOffset-out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Internal memory access arrows -->
+        <mxCell id="edge-buf-window" value="delayed sample" style="endArrow=block;endFill=1;html=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="mem-data-buf" target="hw-sliding-window" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-aux-window" value="old products" style="endArrow=block;endFill=1;html=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="mem-aux-products" target="hw-sliding-window" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="330" />
+              <mxPoint x="390" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Window to metric -->
+        <mxCell id="edge-window-metric" value="accum" style="endArrow=block;endFill=1;html=1;strokeColor=#1971c2;strokeWidth=2;fontSize=9;labelBackgroundColor=#FFFFFF;edgeStyle=orthogonalEdgeStyle;rounded=1;" edge="1" source="hw-sliding-window" target="hw-metric-detect" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Hardware params annotation -->
+        <mxCell id="hw-params" value="&lt;font style='font-size:10px;'&gt;&lt;b&gt;Hardware Parameters&lt;/b&gt;&lt;br&gt;window_size (W) = 16&lt;br&gt;data_buf_size = 32&lt;br&gt;aux_buf_size = 16&lt;br&gt;sustain_len = 24&lt;br&gt;pipeline_defer = 2&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="380" width="170" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#495057;" vertex="1" parent="1">
+          <mxGeometry x="640" y="380" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="650" y="385" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-data-line" value="" style="endArrow=block;endFill=1;strokeColor=#1971c2;strokeWidth=2;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="420" as="sourcePoint" />
+            <mxPoint x="700" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-data-text" value="Data stream" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="410" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-ctrl-line" value="" style="endArrow=block;endFill=1;strokeColor=#e03131;strokeWidth=1;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="445" as="sourcePoint" />
+            <mxPoint x="700" y="445" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-ctrl-text" value="Control signal" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="435" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-mem-line" value="" style="endArrow=block;endFill=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="470" as="sourcePoint" />
+            <mxPoint x="700" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-mem-text" value="Memory access" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="460" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-mem-box" value="MEM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#4f46e5;dashed=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="650" y="485" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-mem-label" value="BRAM / Buffer" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="485" width="120" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

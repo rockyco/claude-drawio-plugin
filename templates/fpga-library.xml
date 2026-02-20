@@ -1,0 +1,66 @@
+<mxlibrary>[
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;DSP: Operation&lt;/b&gt;&lt;br&gt;N x (Wb x Wb)&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;N DSP48E1&lt;/font&gt;\" style=\"rounded=0;fillColor=#dbeafe;strokeColor=#1971c2;fontColor=#1e3a5f;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"160\" height=\"60\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 160, "h": 60, "title": "DSP48 Block", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;BRAM: name[N]&lt;/b&gt;&lt;br&gt;depth x width&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;BRAM18: K&lt;/font&gt;\" style=\"rounded=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontColor=#3730a3;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;dashed=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"160\" height=\"60\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 160, "h": 60, "title": "BRAM Block", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;SR: name[N]&lt;/b&gt;&lt;br&gt;PARTITION complete\" style=\"rounded=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontColor=#3730a3;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;dashed=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"160\" height=\"50\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 160, "h": 50, "title": "Shift Register", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;circ_buf[N]&lt;/b&gt;&lt;br&gt;BRAM, no partition\" style=\"rounded=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontColor=#3730a3;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;dashed=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"160\" height=\"50\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 160, "h": 50, "title": "Circular Buffer", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"REG\" style=\"rounded=0;fillColor=#e9ecef;strokeColor=#868e96;fontColor=#495057;fontSize=9;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"20\" height=\"60\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 20, "h": 60, "title": "Pipeline Register", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"MUX\" style=\"shape=rhombus;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#92400e;fontSize=10;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"40\" height=\"40\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 40, "h": 40, "title": "MUX", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;ACC: type&lt;/b&gt;&lt;br&gt;running sum\" style=\"rounded=0;fillColor=#99e9f2;strokeColor=#0c8599;fontColor=#0c8599;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"120\" height=\"60\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 120, "h": 60, "title": "Accumulator", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&gt; THR\" style=\"shape=rhombus;fillColor=#ffc9c9;strokeColor=#e03131;fontColor=#e03131;fontSize=10;fontStyle=1;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"50\" height=\"50\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 50, "h": 50, "title": "Comparator", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"data_in&lt;br&gt;&lt;font style='font-size:9px'&gt;complex_t&lt;/font&gt;\" style=\"shape=ellipse;fillColor=#d1fae5;strokeColor=#059669;fontColor=#065f46;fontSize=10;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"80\" height=\"36\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 80, "h": 36, "title": "Data I/O Port", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"ctrl_signal&lt;br&gt;&lt;font style='font-size:9px'&gt;index_t&lt;/font&gt;\" style=\"shape=ellipse;fillColor=#fce7f3;strokeColor=#db2777;fontColor=#9d174d;fontSize=10;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"80\" height=\"36\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 80, "h": 36, "title": "Control I/O Port", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;hls::FIR (N taps)&lt;/b&gt;&lt;br&gt;SP=K | M DSP48E1\" style=\"rounded=0;fillColor=#fef9c3;strokeColor=#ca8a04;fontColor=#854d0e;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"180\" height=\"50\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 180, "h": 50, "title": "FIR IP Block", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;FSM (N-state)&lt;/b&gt;&lt;br&gt;WAIT_CTRL&lt;br&gt;WAIT_DATA&lt;br&gt;EXTRACT&lt;br&gt;DONE\" style=\"rounded=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#92400e;fontStyle=1;fontSize=11;html=1;whiteSpace=wrap;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"130\" height=\"100\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 130, "h": 100, "title": "FSM Controller", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"&lt;b&gt;STAGE_NAME&lt;/b&gt;\" style=\"rounded=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;dashPattern=8 4;strokeWidth=1.5;fontStyle=1;fontSize=13;fontColor=#475569;html=1;verticalAlign=top;align=center;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"320\" height=\"400\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 320, "h": 400, "title": "DATAFLOW Stage Border", "aspect": "variable"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"stream d=N\" style=\"rounded=1;fillColor=#eff6ff;strokeColor=#1971c2;dashed=1;dashPattern=4 2;fontSize=10;fontColor=#1971c2;fontStyle=2;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"120\" height=\"28\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 120, "h": 28, "title": "FIFO Indicator", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"\" style=\"shape=rhombus;fillColor=#e9ecef;strokeColor=#868e96;fontSize=9;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"30\" height=\"30\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 30, "h": 30, "title": "Splitter Node", "aspect": "fixed"
+  },
+  {
+    "xml": "<mxGraphModel><root><mxCell id=\"0\"/><mxCell id=\"1\" parent=\"0\"/><mxCell id=\"2\" value=\"TRUNC&lt;br&gt;32-&gt;18b\" style=\"rounded=0;fillColor=#e9ecef;strokeColor=#868e96;fontColor=#495057;fontSize=10;html=1;\" vertex=\"1\" parent=\"1\"><mxGeometry width=\"80\" height=\"40\" as=\"geometry\"/></mxCell></root></mxGraphModel>",
+    "w": 80, "h": 40, "title": "Truncation Block", "aspect": "fixed"
+  }
+]</mxlibrary>

@@ -1,0 +1,200 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="M3 DATAFLOW" id="m3-dataflow">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;module3_fine_sync - Karatsuba 3-FIR DATAFLOW&lt;/b&gt;&lt;br&gt;#pragma HLS DATAFLOW - 3 parallel hls::FIR IP instances" style="text;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="520" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- I/O Ports -->
+        <mxCell id="io-data-in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;640 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="340" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="io-offset-out" value="&lt;b&gt;fineOffset_out&lt;/b&gt;&lt;br&gt;index_t&lt;br&gt;(scalar)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="340" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 1: EXTRACT (split_input) -->
+        <mxCell id="stage-extract-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="170" y="80" width="200" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-extract-label" value="&lt;b&gt;EXTRACT&lt;/b&gt;&lt;br&gt;split_input&lt;br&gt;II=1" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="210" y="85" width="120" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="split-block" value="&lt;b&gt;split_input&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px'&gt;complex -&gt; 3 reals&lt;br&gt;I = Re(x)&lt;br&gt;Q = Im(x)&lt;br&gt;S = I + Q&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=11;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="200" y="300" width="130" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 2: COMPUTE (3x parallel FIR) -->
+        <mxCell id="stage-compute-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="420" y="80" width="280" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-compute-label" value="&lt;b&gt;COMPUTE&lt;/b&gt;&lt;br&gt;3x hls::FIR (parallel)&lt;br&gt;II=16 (per FIR)" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="470" y="85" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fir-p1" value="&lt;b&gt;hls::FIR P1&lt;/b&gt;&lt;br&gt;I * Ic&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;160 taps, SP=16&lt;br&gt;coeffs_re.inc&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="170" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fir-p2" value="&lt;b&gt;hls::FIR P2&lt;/b&gt;&lt;br&gt;Q * (-Qc)&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;160 taps, SP=16&lt;br&gt;coeffs_im.inc&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="340" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fir-p3" value="&lt;b&gt;hls::FIR P3&lt;/b&gt;&lt;br&gt;(I+Q) * (Ic-Qc)&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;160 taps, SP=16&lt;br&gt;coeffs_sum.inc&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="460" y="510" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 3: COMBINE + DETECT -->
+        <mxCell id="stage-detect-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="750" y="80" width="540" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-detect-label" value="&lt;b&gt;DETECT&lt;/b&gt;&lt;br&gt;combine_and_detect&lt;br&gt;II=1" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="920" y="85" width="180" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Karatsuba Recombine -->
+        <mxCell id="karatsuba" value="&lt;b&gt;Karatsuba Recombine&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px'&gt;Re = P1 + P2&lt;br&gt;Im = P3 - P1 + P2&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="790" y="290" width="170" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- Mag Squared -->
+        <mxCell id="magsq" value="&lt;b&gt;|corr|^2&lt;/b&gt;&lt;br&gt;Re^2 + Im^2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="990" y="290" width="130" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Peak Finder -->
+        <mxCell id="peak" value="&lt;b&gt;Peak Finder&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:10px'&gt;Track max metric&lt;br&gt;+ CSD scan&lt;/font&gt;" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#ffc9c9;strokeColor=#e03131;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="400" width="120" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- FIFO labels between stages -->
+        <mxCell id="fifo-re" value="re_stream&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="190" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-im" value="im_stream&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="358" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-sum" value="sum_stream&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="380" y="528" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-fir1out" value="fir1_out&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="700" y="190" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-fir2out" value="fir2_out&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="700" y="358" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-fir3out" value="fir3_out&lt;br&gt;d=2" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="700" y="528" width="70" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Edges: input -> split -->
+        <mxCell id="edge-in-split" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="io-data-in" target="split-block" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Split -> FIRs -->
+        <mxCell id="edge-split-fir1" value="I (Re)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="split-block" target="fir-p1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="395" y="320" />
+              <mxPoint x="395" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge-split-fir2" value="Q (Im)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="split-block" target="fir-p2" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-split-fir3" value="I + Q" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="split-block" target="fir-p3" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="395" y="400" />
+              <mxPoint x="395" y="545" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- FIRs -> Karatsuba -->
+        <mxCell id="edge-fir1-k" value="P1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fir-p1" target="karatsuba" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="205" />
+              <mxPoint x="730" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge-fir2-k" value="P2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fir-p2" target="karatsuba" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-fir3-k" value="P3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fir-p3" target="karatsuba" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="730" y="545" />
+              <mxPoint x="730" y="350" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Karatsuba -> MagSq -> Peak -> Output -->
+        <mxCell id="edge-k-magsq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="karatsuba" target="magsq" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-magsq-peak" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="magsq" target="peak" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-peak-out" value="fineOffset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="peak" target="io-offset-out" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1200" y="450" />
+              <mxPoint x="1200" y="375" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;" vertex="1" parent="1">
+          <mxGeometry x="20" y="770" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="775" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fir-box" value="FIR IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#ca8a04;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="30" y="800" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fir-text" value="hls::FIR IP (160 taps, SP=16)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="800" width="180" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fifo-box" value="d=N" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="30" y="825" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fifo-text" value="Internal FIFO (hls::stream, depth=N)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="825" width="220" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-stage-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="30" y="850" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-stage-text" value="DATAFLOW stage boundary" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="850" width="200" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,35 @@
+{
+  "title": "module2_coarse_cfo - Micro-Architecture",
+  "type": "module_microarchitecture",
+  "phase": 6,
+  "version": "5.0.3",
+  "module_pattern": "Case_C_FSM_DATAFLOW",
+  "architecture": "3-stage DATAFLOW: EXTRACT(FSM+circ_buf) -> COMPUTE(autocorr+CORDIC) -> APPLY(NCO+rotation)",
+  "nodes": {
+    "io-data_in": {"name": "data_in", "type": "stream_port", "desc": "complex_t, all samples from M1"},
+    "io-startOffset_in": {"name": "startOffset_in", "type": "ctrl_port", "desc": "index_t, async from M1 detector"},
+    "io-search_buffer_out": {"name": "search_buffer_out", "type": "stream_port", "desc": "complex_t, CFO-corrected search buffer"},
+    "io-coarseFreqOff_out": {"name": "coarseFreqOff_out", "type": "ctrl_port", "desc": "freq_t scalar"},
+    "stage-extract": {"name": "EXTRACT", "type": "fsm_stage", "desc": "FSM: WAIT_CTRL->WAIT_DATA_READY->EXTRACT->DONE. circ_buf[2048], non-blocking startOffset poll"},
+    "stage-compute": {"name": "COMPUTE", "type": "compute_stage", "desc": "Autocorrelation USE_LEN samples, CORDIC atan2, CFO scaling"},
+    "stage-apply": {"name": "APPLY", "type": "apply_stage", "desc": "NCO LUT sin/cos ROM_2P, phase accumulator, linear interpolation, complex rotation"},
+    "mem-circ_buf": {"name": "circ_buf[2048]", "type": "bram", "desc": "Circular buffer for offset-aware extraction"},
+    "mem-use": {"name": "use[USE_LEN]", "type": "local_array", "desc": "L-STF samples for autocorrelation"},
+    "mem-nco_lut": {"name": "sin/cos LUT[1024]", "type": "rom_2p", "desc": "NCO lookup tables, dual-port BRAM"}
+  },
+  "edges": [
+    {"from": "io-data_in", "to": "stage-extract", "type": "data"},
+    {"from": "io-startOffset_in", "to": "stage-extract", "type": "ctrl", "label": "non-blocking poll"},
+    {"from": "stage-extract", "to": "stage-compute", "type": "data", "label": "lstf_stream (d=160)"},
+    {"from": "stage-extract", "to": "stage-apply", "type": "data", "label": "passthrough_stream (d=680)"},
+    {"from": "stage-compute", "to": "stage-apply", "type": "ctrl", "label": "cfo_stream (d=4)"},
+    {"from": "stage-apply", "to": "io-search_buffer_out", "type": "data"},
+    {"from": "stage-apply", "to": "io-coarseFreqOff_out", "type": "ctrl"}
+  ],
+  "resource_summary": {
+    "dsp48": 18,
+    "bram": 12,
+    "lut": 3001,
+    "ff": 1903
+  }
+}

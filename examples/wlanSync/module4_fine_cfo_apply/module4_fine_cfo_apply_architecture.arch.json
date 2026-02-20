@@ -1,0 +1,39 @@
+{
+  "title": "module4_fine_cfo_apply - Architecture",
+  "type": "module_architecture",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "module_pattern": "Case_C",
+  "patterns_applied": ["FP-ASYNC", "FP-NCOQUARTER", "FP-SEPARATION"],
+  "nodes": {
+    "in-data_in": {"name": "data_in", "desc": "Input: complex_t, ~26036 presliced samples"},
+    "in-fineOffset_in": {"name": "fineOffset_in", "desc": "Input: index_t, async control from M3"},
+    "core": {"name": "module4_fine_cfo_apply", "desc": "FSM + DATAFLOW: EXTRACT/COMPUTE/APPLY with circ_buf[16384]"},
+    "out-data_out": {"name": "data_out", "desc": "Output: complex_t, ~26030 corrected samples"},
+    "out-fineFreqOff_out": {"name": "fineFreqOff_out", "desc": "Output: freq_t, fine frequency offset scalar"}
+  },
+  "edges": [
+    {"from": "in-data_in", "to": "core", "type": "data"},
+    {"from": "in-fineOffset_in", "to": "core", "type": "ctrl"},
+    {"from": "core", "to": "out-data_out", "type": "data"},
+    {"from": "core", "to": "out-fineFreqOff_out", "type": "ctrl"}
+  ],
+  "fsm": true,
+  "dataflow": true,
+  "control_inputs": {
+    "fineOffset_in": {
+      "type": "index_t",
+      "async": true,
+      "handling": "FSM_POLL",
+      "estimated_arrival_cycles": 7000,
+      "producer": "module3_fine_sync"
+    }
+  },
+  "hardware_params": {
+    "circ_buf_size": 16384,
+    "nco_table_size": 1024,
+    "nco_quarter_wave": true,
+    "extract_len": 160
+  }
+}

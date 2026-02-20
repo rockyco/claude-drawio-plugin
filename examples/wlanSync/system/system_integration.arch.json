@@ -1,0 +1,72 @@
+{
+  "title": "wlanSync - System Integration",
+  "type": "system_integration",
+  "phase": 7,
+  "version": "5.0.2",
+  "nodes": {
+    "module0_prefilter": {
+      "name": "M0",
+      "desc": "51-tap symmetric pre-add FIR (FP-SYMCOEFF)"
+    },
+    "module1_packet_detect": {
+      "name": "M1",
+      "desc": "L-STF packet detection + write-through ALL samples + startOffset"
+    },
+    "data_duplicator": {
+      "name": "data_dup",
+      "desc": "Inline data stream duplicator (M1 -> M2 + M4)"
+    },
+    "startOffset_duplicator": {
+      "name": "startOffset_dup",
+      "desc": "Inline scalar control duplicator (startOffset -> M2 + M4)"
+    },
+    "module2_coarse_cfo": {
+      "name": "M2",
+      "desc": "Coarse CFO (FSM + circ_buf[2048] + DATAFLOW)"
+    },
+    "module3_fine_sync": {
+      "name": "M3",
+      "desc": "Fine timing via L-LTF cross-correlation (3x hls::FIR IP, SP=16)"
+    },
+    "coarse_cfo_passthrough": {
+      "name": "cfo_passthrough",
+      "desc": "Passthrough wrapper for coarseFreqOff output"
+    },
+    "fineOffset_duplicator": {
+      "name": "fineOffset_dup",
+      "desc": "Inline scalar control duplicator (fineOffset -> M4 + output)"
+    },
+    "module4_fine_cfo_apply": {
+      "name": "M4",
+      "desc": "Fine CFO estimation + correction (Dual-async FSM + circ_buf[8192])"
+    }
+  },
+  "edges": [
+    {"from": "module0_prefilter", "to": "module1_packet_detect", "type": "data"},
+    {"from": "module1_packet_detect", "to": "data_duplicator", "type": "data"},
+    {"from": "data_duplicator", "to": "module2_coarse_cfo", "type": "data"},
+    {"from": "data_duplicator", "to": "module4_fine_cfo_apply", "type": "data"},
+    {"from": "module1_packet_detect", "to": "startOffset_duplicator", "type": "ctrl"},
+    {"from": "startOffset_duplicator", "to": "module2_coarse_cfo", "type": "ctrl"},
+    {"from": "startOffset_duplicator", "to": "module4_fine_cfo_apply", "type": "ctrl"},
+    {"from": "module2_coarse_cfo", "to": "module3_fine_sync", "type": "data"},
+    {"from": "module2_coarse_cfo", "to": "coarse_cfo_passthrough", "type": "ctrl"},
+    {"from": "module3_fine_sync", "to": "fineOffset_duplicator", "type": "ctrl"},
+    {"from": "fineOffset_duplicator", "to": "module4_fine_cfo_apply", "type": "ctrl"}
+  ],
+  "system_resources": {
+    "dsp": 170,
+    "bram36": 14,
+    "bram18": 20,
+    "bram_ramb18_equiv": 48,
+    "lut": 9561,
+    "ff": 15113,
+    "timing_wns_ns": 0.057,
+    "timing_cp_ns": 9.943,
+    "timing_fmax_mhz": 100.6,
+    "timing_met": true,
+    "cosim_latency": 33065,
+    "cosim_pass": true,
+    "latency_ratio": 1.264
+  }
+}

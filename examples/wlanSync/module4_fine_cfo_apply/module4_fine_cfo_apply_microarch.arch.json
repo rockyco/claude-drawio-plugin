@@ -1,0 +1,39 @@
+{
+  "title": "module4_fine_cfo_apply - Micro-Architecture",
+  "type": "module_microarchitecture",
+  "phase": 6,
+  "version": "5.0.3",
+  "module_pattern": "Case_C_FSM_DATAFLOW",
+  "architecture": "3-stage DATAFLOW: EXTRACT(5-state FSM + circ_buf[8192] + dual async ctrl) -> COMPUTE(autocorr+CORDIC) -> APPLY(NCO+rotation)",
+  "bottleneck": "circ_buf[8192] = 26 BRAM, largest single buffer in system",
+  "nodes": {
+    "io-data_in": {"name": "data_in", "type": "stream_port", "desc": "complex_t, all samples from system input"},
+    "io-startOffset_in": {"name": "startOffset_in", "type": "ctrl_port", "desc": "index_t, async from M1 (~cycle 155)"},
+    "io-fineOffset_in": {"name": "fineOffset_in", "type": "ctrl_port", "desc": "index_t, async from M3 (~cycle 6600)"},
+    "io-data_out": {"name": "data_out", "type": "stream_port", "desc": "complex_t, CFO-corrected output"},
+    "io-fineCfoFreq_out": {"name": "fineCfoFreq_out", "type": "ctrl_port", "desc": "freq_t scalar"},
+    "stage-extract": {"name": "EXTRACT", "type": "fsm_stage", "desc": "5-state FSM: WAIT_CTRL->WAIT_DATA_READY->EXTRACT_LLTF->PASSTHROUGH->DONE. circ_buf[8192], dual non-blocking ctrl polls"},
+    "stage-compute": {"name": "COMPUTE", "type": "compute_stage", "desc": "Autocorrelation EXTRACT_LEN samples, CORDIC atan2, fine CFO scaling"},
+    "stage-apply": {"name": "APPLY", "type": "apply_stage", "desc": "NCO LUT sin/cos ROM_2P, phase accumulator, linear interpolation, complex rotation"},
+    "mem-circ_buf": {"name": "circ_buf[8192]", "type": "bram", "desc": "Circular buffer for dual-offset extraction, 26 BRAM"},
+    "mem-lltf": {"name": "lltf[EXTRACT_LEN]", "type": "local_array", "desc": "L-LTF samples for autocorrelation"},
+    "mem-nco_lut": {"name": "sin/cos LUT[1024]", "type": "rom_2p", "desc": "NCO lookup tables, dual-port BRAM"}
+  },
+  "edges": [
+    {"from": "io-data_in", "to": "stage-extract", "type": "data"},
+    {"from": "io-startOffset_in", "to": "stage-extract", "type": "ctrl", "label": "non-blocking poll (~cycle 155)"},
+    {"from": "io-fineOffset_in", "to": "stage-extract", "type": "ctrl", "label": "non-blocking poll (~cycle 6600)"},
+    {"from": "stage-extract", "to": "stage-compute", "type": "data", "label": "lltf_stream (d=168)"},
+    {"from": "stage-extract", "to": "stage-apply", "type": "data", "label": "passthrough_stream (d=2048)"},
+    {"from": "stage-extract", "to": "stage-apply", "type": "ctrl", "label": "offset_stream (d=4)"},
+    {"from": "stage-compute", "to": "stage-apply", "type": "ctrl", "label": "cfo_stream (d=4)"},
+    {"from": "stage-apply", "to": "io-data_out", "type": "data"},
+    {"from": "stage-apply", "to": "io-fineCfoFreq_out", "type": "ctrl"}
+  ],
+  "resource_summary": {
+    "dsp48": 18,
+    "bram": 26,
+    "lut": 2001,
+    "ff": 1729
+  }
+}

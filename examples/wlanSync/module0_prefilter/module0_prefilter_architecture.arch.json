@@ -1,0 +1,26 @@
+{
+  "title": "module0_prefilter - Architecture",
+  "type": "module_architecture",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "module_pattern": "Case_A",
+  "patterns_applied": ["FP-SYMCOEFF", "FP-PRAGMA"],
+  "nodes": {
+    "in-data_in": {"name": "data_in", "desc": "Input: complex_t, 26155 samples"},
+    "core": {"name": "module0_prefilter", "desc": "51-tap symmetric pre-add FIR, II=1"},
+    "sr-shift_reg_re": {"name": "shift_reg_re", "desc": "Shift register [51], ARRAY_PARTITION complete"},
+    "sr-shift_reg_im": {"name": "shift_reg_im", "desc": "Shift register [51], ARRAY_PARTITION complete"},
+    "out-data_out": {"name": "data_out", "desc": "Output: complex_t, 26105 samples"}
+  },
+  "edges": [
+    {"from": "in-data_in", "to": "core", "type": "data"},
+    {"from": "core", "to": "out-data_out", "type": "data"}
+  ],
+  "hardware_params": {
+    "fir_taps": 51,
+    "fir_impl": "symmetric_preadd",
+    "symmetric": true,
+    "coefficient_files": ["filter_coeffs.txt"]
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "title": "module0_prefilter - Micro-Architecture",
+  "type": "module_microarchitecture",
+  "phase": 6,
+  "version": "5.0.3",
+  "module_pattern": "Case_A",
+  "architecture": "51-tap symmetric pre-add FIR, II=1, ARRAY_PARTITION complete on shift registers",
+  "critical_path": "SHIFT -> PRE-ADD(17b) -> MUL(34b) -> ACC(36b) -> TRUNC(16b)",
+  "bottleneck": "None - pure pipeline, II=1",
+  "nodes": {
+    "io-data_in": {
+      "name": "data_in",
+      "type": "stream_port",
+      "desc": "Input: complex_t (2x ap_fixed<16,4>)"
+    },
+    "io-data_out": {
+      "name": "data_out",
+      "type": "stream_port",
+      "desc": "Output: complex_t, num_filtered samples"
+    },
+    "loop-main": {
+      "name": "MAIN",
+      "type": "pipeline",
+      "desc": "for i=0..num_filtered-1, II=1. Dual channel symmetric FIR"
+    },
+    "loop-drain": {
+      "name": "DRAIN",
+      "type": "pipeline",
+      "desc": "Consume remaining input samples for system integration"
+    },
+    "hw-shift_reg": {
+      "name": "SHIFT REG",
+      "type": "compute",
+      "desc": "Shift right, new sample at sr[0]. Fully unrolled (51 FFs per channel)"
+    },
+    "hw-preadd": {
+      "name": "PRE-ADD",
+      "type": "compute",
+      "desc": "sr[k]+sr[50-k] for k=0..24, plus center tap. 25 pairs + 1 center = 26 unique"
+    },
+    "hw-dsp_mul": {
+      "name": "DSP: MUL",
+      "type": "dsp48",
+      "desc": "26 multiplies per channel (preadd*coeff), 1 DSP48E1 each. 42 DSP total"
+    },
+    "hw-acc": {
+      "name": "ACC",
+      "type": "accumulator",
+      "desc": "accum_t (ap_fixed<36,12>): 26-tap multiply-accumulate sum"
+    },
+    "hw-trunc": {
+      "name": "TRUNC",
+      "type": "pipeline_register",
+      "desc": "Truncation: accum_t(36b) -> data_t(16b)"
+    },
+    "mem-sr_re": {
+      "name": "shift_reg_re[51]",
+      "type": "register_file",
+      "desc": "ARRAY_PARTITION complete - 51 flip-flops for parallel access"
+    },
+    "mem-sr_im": {
+      "name": "shift_reg_im[51]",
+      "type": "register_file",
+      "desc": "ARRAY_PARTITION complete - 51 flip-flops for parallel access"
+    },
+    "mem-coeffs": {
+      "name": "COEFFS[26]",
+      "type": "rom",
+      "desc": "26 unique symmetric coefficients, const ROM"
+    }
+  },
+  "edges": [
+    {"from": "io-data_in", "to": "loop-main", "type": "data", "label": "complex_t stream"},
+    {"from": "loop-main", "to": "io-data_out", "type": "data", "label": "complex_t filtered"},
+    {"from": "loop-main", "to": "loop-drain", "type": "flow", "label": "sequential"},
+    {"from": "hw-shift_reg", "to": "hw-preadd", "type": "data", "label": "16b pairs"},
+    {"from": "hw-preadd", "to": "hw-dsp_mul", "type": "data", "label": "17b pre-added"},
+    {"from": "hw-dsp_mul", "to": "hw-acc", "type": "data", "label": "34b product", "critical_path": true},
+    {"from": "hw-acc", "to": "hw-trunc", "type": "data", "label": "36b accumulator", "critical_path": true},
+    {"from": "mem-sr_re", "to": "hw-shift_reg", "type": "data", "label": "real channel samples"},
+    {"from": "mem-sr_im", "to": "hw-shift_reg", "type": "data", "label": "imag channel samples"},
+    {"from": "mem-coeffs", "to": "hw-dsp_mul", "type": "data", "label": "coefficient values"}
+  ],
+  "resource_summary": {
+    "dsp48": {"mul_per_channel": 26, "total_csynth": 42},
+    "registers": {"shift_reg_re": "51x ap_fixed<16,4> (PARTITION complete)", "shift_reg_im": "51x ap_fixed<16,4> (PARTITION complete)"},
+    "rom": {"coeffs": "26x coeff_t (symmetric unique)"},
+    "pragmas": ["PIPELINE II=1 (MAIN)", "ARRAY_PARTITION complete (shift_reg_re, shift_reg_im)", "UNROLL (SHIFT, PRE_ADD_MUL)"]
+  }
+}

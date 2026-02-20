@@ -1,0 +1,41 @@
+{
+  "title": "module2_coarse_cfo - Architecture",
+  "type": "module_architecture",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "module_pattern": "Case_C_FSM",
+  "patterns_applied": ["FP-ASYNC", "FP-SEPARATION", "FP-NCOQUARTER", "FP-PRAGMA"],
+  "nodes": {
+    "in-data_in": {"name": "data_in", "desc": "Input: complex_t, ALL num_filtered (26105) samples"},
+    "in-startOffset_in": {"name": "startOffset_in", "desc": "Input: index_t, async control from M1 via duplicator"},
+    "core": {"name": "module2_coarse_cfo", "desc": "FSM + DATAFLOW: EXTRACT(FSM+circ_buf[2048])/COMPUTE/APPLY, CSR~160"},
+    "out-search_buffer_out": {"name": "search_buffer_out", "desc": "Output: complex_t, 640 corrected samples"},
+    "out-coarseFreqOff_out": {"name": "coarseFreqOff_out", "desc": "Output: freq_t, scalar CFO estimate"}
+  },
+  "edges": [
+    {"from": "in-data_in", "to": "core", "type": "data"},
+    {"from": "in-startOffset_in", "to": "core", "type": "ctrl"},
+    {"from": "core", "to": "out-search_buffer_out", "type": "data"},
+    {"from": "core", "to": "out-coarseFreqOff_out", "type": "ctrl"}
+  ],
+  "fsm": true,
+  "dataflow": true,
+  "control_inputs": {
+    "startOffset_in": {
+      "type": "index_t",
+      "async": true,
+      "handling": "FSM_POLL",
+      "estimated_arrival_cycles": 200,
+      "producer": "module1_packet_detect"
+    }
+  },
+  "hardware_params": {
+    "fir_taps": 16,
+    "fir_impl": "manual_shift_reg",
+    "nco_table_size": 1024,
+    "nco_quarter_wave": true,
+    "extract_len": 160,
+    "circ_buf_size": 2048
+  }
+}

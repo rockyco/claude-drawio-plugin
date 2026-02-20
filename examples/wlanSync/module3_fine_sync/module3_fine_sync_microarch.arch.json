@@ -1,0 +1,36 @@
+{
+  "title": "module3_fine_sync - Micro-Architecture",
+  "type": "module_microarchitecture",
+  "phase": 6,
+  "version": "5.0.3",
+  "module_pattern": "Karatsuba_3FIR_DATAFLOW",
+  "architecture": "SPLIT -> 3 parallel 160-tap hls::FIR IP (SP=8) -> Karatsuba combine -> peak detect + CSD",
+  "bottleneck": "FIR IP cores at SP=8: 484 DSP (CSYNTH), system's largest DSP consumer",
+  "nodes": {
+    "io-data_in": {"name": "data_in", "type": "stream_port", "desc": "complex_t, search buffer from M2"},
+    "io-fineOffset_out": {"name": "fineOffset_out", "type": "ctrl_port", "desc": "index_t scalar, fine timing offset"},
+    "stage-split": {"name": "SPLIT", "type": "splitter", "desc": "Complex to 3 real: I, Q, I+Q"},
+    "hw-fir_p1": {"name": "FIR P1", "type": "fir_ip", "desc": "I * Ic (real part coefficients), 160-tap, SP=8"},
+    "hw-fir_p2": {"name": "FIR P2", "type": "fir_ip", "desc": "Q * (-Qc) (negated imag coefficients), 160-tap, SP=8"},
+    "hw-fir_p3": {"name": "FIR P3", "type": "fir_ip", "desc": "(I+Q) * (Ic-Qc) (sum coefficients), 160-tap, SP=8"},
+    "stage-combine": {"name": "COMBINE+DETECT", "type": "compute", "desc": "Karatsuba: Re=P1-P2, Im=P3-P1-P2. |corr|^2, peak tracking"},
+    "stage-csd": {"name": "CSD REFINEMENT", "type": "control", "desc": "Scan peak neighborhood, find last index >= mmax"}
+  },
+  "edges": [
+    {"from": "io-data_in", "to": "stage-split", "type": "data"},
+    {"from": "stage-split", "to": "hw-fir_p1", "type": "data", "label": "I (re)"},
+    {"from": "stage-split", "to": "hw-fir_p2", "type": "data", "label": "Q (im)"},
+    {"from": "stage-split", "to": "hw-fir_p3", "type": "data", "label": "I+Q"},
+    {"from": "hw-fir_p1", "to": "stage-combine", "type": "data", "label": "P1"},
+    {"from": "hw-fir_p2", "to": "stage-combine", "type": "data", "label": "P2"},
+    {"from": "hw-fir_p3", "to": "stage-combine", "type": "data", "label": "P3"},
+    {"from": "stage-combine", "to": "stage-csd", "type": "data", "label": "peak + metric array"},
+    {"from": "stage-csd", "to": "io-fineOffset_out", "type": "ctrl", "label": "fineOffset"}
+  ],
+  "resource_summary": {
+    "dsp48": {"fir_ip_3x": "20 each at SP=8", "total_csynth": 120},
+    "bram": 6,
+    "lut": 2487,
+    "ff": 2193
+  }
+}

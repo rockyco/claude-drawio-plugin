@@ -1,0 +1,31 @@
+{
+  "title": "module2_coarse_cfo - FSM State Diagram",
+  "type": "fsm_states",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "notes": ["FP-ASYNC pattern: blocking data read + non-blocking startOffset poll in circ_buf[2048]"],
+  "nodes": {
+    "state-wait": {"name": "WAIT_CTRL", "desc": "Phase 1: blocking data_in.read() into circ_buf, non-blocking startOffset_in poll, II=1"},
+    "state-ready": {"name": "WAIT_DATA_READY", "desc": "Phase 2: continue filling circ_buf until n >= start_off + SEARCH_LEN - 1"},
+    "state-extract": {"name": "EXTRACT_STATE", "desc": "Phase 3: read 640 samples from circ_buf -> lstf_out(160) + passthrough_out(640)"},
+    "state-done": {"name": "DONE", "desc": "Phase 4: consume remaining data_in samples (write nothing downstream)"},
+    "buf-circ": {"name": "circ_buf[2048]", "desc": "Circular buffer, complex_t, BRAM, BUF_MASK=2047"},
+    "port-data-in": {"name": "data_in", "desc": "Input data stream (complex_t, ALL 26105 samples)"},
+    "port-ctrl-in": {"name": "startOffset_in", "desc": "Async control (index_t scalar from M1)"},
+    "port-lstf": {"name": "lstf_out", "desc": "L-STF extraction output (160 samples)"},
+    "port-pass": {"name": "passthrough_out", "desc": "Passthrough output (640 samples)"}
+  },
+  "edges": [
+    {"from": "state-wait", "to": "state-wait", "type": "flow", "label": "startOffset_in.empty() (self-loop: keep polling)"},
+    {"from": "state-wait", "to": "state-ready", "type": "flow", "label": "ctrl_received = true"},
+    {"from": "state-ready", "to": "state-ready", "type": "flow", "label": "n < start_off + SEARCH_LEN - 1 (self-loop)"},
+    {"from": "state-ready", "to": "state-extract", "type": "flow", "label": "n >= start_off + SEARCH_LEN - 1"},
+    {"from": "state-extract", "to": "state-done", "type": "flow", "label": "extract_count >= SEARCH_LEN"},
+    {"from": "state-done", "to": "state-done", "type": "flow", "label": "n < num_samples (consume remaining)"},
+    {"from": "port-data-in", "to": "buf-circ", "type": "data", "label": "blocking read every cycle"},
+    {"from": "port-ctrl-in", "to": "state-wait", "type": "ctrl", "label": "non-blocking poll"},
+    {"from": "buf-circ", "to": "port-lstf", "type": "data", "label": "160 samples (first quarter)"},
+    {"from": "buf-circ", "to": "port-pass", "type": "data", "label": "640 samples (full search window)"}
+  ]
+}

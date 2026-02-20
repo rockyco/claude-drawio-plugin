@@ -1,0 +1,245 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="M0 Micro-Architecture" id="m0-microarch">
+    <mxGraphModel dx="1400" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="800">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b style='font-size:15px;'&gt;module0_prefilter - RTL Micro-Architecture&lt;/b&gt;&lt;br&gt;51-tap Symmetric Pre-Add FIR, II=1, Dual Channel (I/Q)" style="text;html=1;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="500" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Input Port -->
+        <mxCell id="io_data_in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;complex_t&lt;br&gt;16b I + 16b Q&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="250" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Register: Input -->
+        <mxCell id="preg_in" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="148" y="225" width="8" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Shift Register block -->
+        <mxCell id="mem_sr_re" value="&lt;b&gt;shift_reg_re[51]&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;PARTITION complete&lt;br&gt;51 FFs (real channel)&lt;br&gt;sr[0]=newest, sr[50]=oldest&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="180" y="190" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mem_sr_im" value="&lt;b&gt;shift_reg_im[51]&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;PARTITION complete&lt;br&gt;51 FFs (imag channel)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="180" y="290" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Register: Post-shift -->
+        <mxCell id="preg_sr" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="365" y="225" width="8" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Pre-Add block -->
+        <mxCell id="dsp_preadd" value="&lt;b&gt;PRE-ADD&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;sr[k] + sr[50-k]&lt;br&gt;k = 0..24&lt;br&gt;25 pairs + 1 center&lt;br&gt;= 26 unique (17b)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="400" y="210" width="140" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- Coefficient ROM -->
+        <mxCell id="mem_coeffs" value="&lt;b&gt;COEFFS[26]&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;const ROM (coeff_t)&lt;br&gt;26 unique symmetric&lt;br&gt;from filter_coeffs.txt&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="590" y="110" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Register: Post-preadd -->
+        <mxCell id="preg_pa" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="565" y="225" width="8" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- DSP Multiply block -->
+        <mxCell id="dsp_mul" value="&lt;b&gt;DSP48E1 MUL&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;26 x (17b x 16b)&lt;br&gt;per channel&lt;br&gt;34b product&lt;br&gt;&lt;b&gt;42 DSP total&lt;/b&gt;&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="210" width="140" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Register: Post-mul -->
+        <mxCell id="preg_mul" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="765" y="225" width="8" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Accumulator block -->
+        <mxCell id="acc_tree" value="&lt;b&gt;ACCUMULATE&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;26-term adder tree&lt;br&gt;accum_t: ap_fixed&amp;lt;36,12&amp;gt;&lt;br&gt;5-level log2(26) tree&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99e9f2;strokeColor=#0c8599;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="800" y="210" width="150" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Pipeline Register: Post-acc -->
+        <mxCell id="preg_acc" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="975" y="225" width="8" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Truncation block -->
+        <mxCell id="trunc" value="&lt;b&gt;TRUNCATE&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;36b -&gt; 16b&lt;br&gt;accum_t -&gt; data_t&lt;br&gt;saturate + round&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="230" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Output Port -->
+        <mxCell id="io_data_out" value="&lt;b&gt;data_out&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;complex_t&lt;br&gt;16b I + 16b Q&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="240" width="100" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Critical path annotation -->
+        <mxCell id="crit_path" value="&lt;font color='#e03131'&gt;&lt;b&gt;Critical Path:&lt;/b&gt; SHIFT -&gt; PRE-ADD (17b) -&gt; MUL (34b) -&gt; ACC (36b) -&gt; TRUNC (16b)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="180" y="390" width="520" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- === DATA EDGES === -->
+
+        <!-- data_in -> preg_in -->
+        <mxCell id="edge_in_preg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="io_data_in" target="preg_in" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preg_in -> shift regs -->
+        <mxCell id="edge_preg_sr_re" value="I" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="preg_in" target="mem_sr_re" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_preg_sr_im" value="Q" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="preg_in" target="mem_sr_im" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- shift regs -> preg_sr -->
+        <mxCell id="edge_sr_re_preg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="mem_sr_re" target="preg_sr" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge_sr_im_preg" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="mem_sr_im" target="preg_sr" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preg_sr -> preadd -->
+        <mxCell id="edge_preg_pa" value="16b pairs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="preg_sr" target="dsp_preadd" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preadd -> preg_pa -->
+        <mxCell id="edge_pa_preg" value="17b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="dsp_preadd" target="preg_pa" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preg_pa -> dsp_mul -->
+        <mxCell id="edge_preg_mul" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="preg_pa" target="dsp_mul" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- coeffs -> dsp_mul (memory access, dashed indigo) -->
+        <mxCell id="edge_coeff_mul" value="coeff_t" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="mem_coeffs" target="dsp_mul" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- dsp_mul -> preg_mul -->
+        <mxCell id="edge_mul_preg" value="34b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="dsp_mul" target="preg_mul" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preg_mul -> accumulator -->
+        <mxCell id="edge_preg_acc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="preg_mul" target="acc_tree" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- accumulator -> preg_acc -->
+        <mxCell id="edge_acc_preg" value="36b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="acc_tree" target="preg_acc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- preg_acc -> trunc -->
+        <mxCell id="edge_preg_trunc" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="preg_acc" target="trunc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- trunc -> data_out -->
+        <mxCell id="edge_trunc_out" value="16b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="trunc" target="io_data_out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- === RESOURCE SUMMARY BOX === -->
+        <mxCell id="resource_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="430" width="360" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="resource_title" value="&lt;b&gt;Resource Summary (CSYNTH)&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="435" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="res_dsp" value="DSP48E1: 42 (26/channel - reduced by pre-add symmetry)" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="460" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_bram" value="BRAM: 0 (shift regs use FFs via ARRAY_PARTITION)" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="480" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_ff" value="FF: ~1632 (51 x 16b x 2 channels)" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="500" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_ii" value="II: 1 (fully pipelined, no stalls)" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="520" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_latency" value="Latency: ~51 + pipeline_depth cycles" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="540" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_sym" value="Symmetry: h[k]==h[50-k], 25 pre-add pairs + 1 center" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="560" width="320" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="res_pragmas" value="Pragmas: PIPELINE II=1, PARTITION complete, UNROLL" style="text;html=1;align=left;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="35" y="580" width="320" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- === LEGEND === -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;" vertex="1" parent="1">
+          <mxGeometry x="420" y="430" width="280" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="430" y="435" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_dsp_box" value="DSP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="430" y="460" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_dsp_text" value="Compute / DSP48E1" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="460" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_mem_box" value="MEM" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="430" y="485" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_mem_text" value="Memory / Buffer / ROM (dashed)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="485" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_acc_box" value="ACC" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99e9f2;strokeColor=#0c8599;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="430" y="510" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_acc_text" value="Accumulator / Reduction" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="510" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_preg_box" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;" vertex="1" parent="1">
+          <mxGeometry x="440" y="538" width="8" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_preg_text" value="Pipeline register" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="535" width="140" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_io_box" value="I/O" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="430" y="560" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_io_text" value="Stream port (data_t)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="560" width="140" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_data_line" value="" style="endArrow=block;endFill=1;strokeColor=#1971c2;strokeWidth=2;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="430" y="590" as="sourcePoint" />
+            <mxPoint x="480" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_data_text" value="Data bus (solid blue)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="583" width="140" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_mem_line" value="" style="endArrow=block;endFill=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="430" y="610" as="sourcePoint" />
+            <mxPoint x="480" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_mem_line_text" value="Memory access (dashed indigo)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="490" y="603" width="180" height="18" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

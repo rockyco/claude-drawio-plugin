@@ -1,0 +1,110 @@
+{
+  "title": "module1_packet_detect - Micro-Architecture (v5.0.3)",
+  "type": "module_microarchitecture",
+  "phase": 6,
+  "version": "5.0.3",
+  "module_pattern": "Case_B",
+  "architecture": "Single MAIN_LOOP: N+2 iterations, II=1, write-through, MATOPT8 aux product buffers, FP-PIPEREG deferred metric",
+  "critical_path": "ACC(32b) -> TRUNC(18b) -> SQUARE(3 DSP48) -> REG -> CMP -> CTRL (deferred 3 cycles)",
+  "bottleneck": "None - II=1 achieved with FP-NOBREAK + FP-NOBREAK-CE unconditional updates",
+  "nodes": {
+    "io-data_in": {
+      "name": "data_in",
+      "type": "stream_port",
+      "desc": "Input: complex_t (2x ap_fixed<16,4>), 26105 samples"
+    },
+    "io-data_out": {
+      "name": "data_out",
+      "type": "stream_port",
+      "desc": "Output: complex_t, ALL 26105 samples (write-through)"
+    },
+    "io-startOffset_out": {
+      "name": "startOffset_out",
+      "type": "stream_port",
+      "desc": "Output: index_t (ap_int<16>), detection position scalar"
+    },
+    "init-zero_aux": {
+      "name": "ZERO_AUX",
+      "type": "init",
+      "desc": "16 cycles, II=1. Zero-initialize 3 auxiliary product buffers"
+    },
+    "loop-main": {
+      "name": "MAIN_LOOP",
+      "type": "pipeline",
+      "desc": "N+2 cycles, II=1. Single-loop: write-through + incremental window + deferred metric + conditional detect. Guards: n>=D (window update), n>=2D+2 (metric compare)"
+    },
+    "hw-window_update": {
+      "name": "WINDOW UPDATE",
+      "type": "compute",
+      "desc": "Read delayed from data_buf, compute new products (conj*delayed), read old from aux buffers, O(1) incremental accumulator update. 8 MUL for new products (old = 0-DSP read)"
+    },
+    "hw-acc": {
+      "name": "ACC",
+      "type": "accumulator",
+      "desc": "3x accum_t (ap_fixed<32,12>): sum_c_re, sum_c_im, sum_p. UNCONDITIONAL update (FP-NOBREAK-CE)"
+    },
+    "hw-trunc_reg": {
+      "name": "TRUNC",
+      "type": "pipeline_register",
+      "desc": "Truncation: accum_t(32b) -> trunc_accum_t(ap_fixed<18,10>). Cycle n of deferred pipeline"
+    },
+    "hw-dsp_square": {
+      "name": "DSP: SQUARE",
+      "type": "dsp48",
+      "desc": "3 DSP48 slices: tc_re^2 + tc_im^2 -> prev_corr, tp^2 -> prev_pow. Cycle n+1"
+    },
+    "hw-metric_reg": {
+      "name": "REG",
+      "type": "pipeline_register",
+      "desc": "Metric registers: prev_corr (metric_sq_t = ap_fixed<36,20>), prev_pow. Cycle n+1 output"
+    },
+    "hw-cmp": {
+      "name": "CMP (>)",
+      "type": "comparator",
+      "desc": "prev_corr > (prev_pow >> 1). Cycle n+2. CONDITIONAL: guarded by !detected"
+    },
+    "hw-ctrl": {
+      "name": "CTRL",
+      "type": "control",
+      "desc": "consecutive counter, >= SUSTAIN_LEN(24) -> detected. Writes startOffset inline"
+    },
+    "mem-data_buf": {
+      "name": "data_buf[32]",
+      "type": "bram",
+      "desc": "Circular BRAM, D-sample delay, ram_s2p, no PARTITION (FP-MEMSEL cat 3)"
+    },
+    "mem-aux_products": {
+      "name": "C_re/C_im/P [16]",
+      "type": "bram",
+      "desc": "3x auxiliary product buffers, circular, MATOPT8 (0-DSP subtract-old via cached products)"
+    }
+  },
+  "edges": [
+    {"from": "io-data_in", "to": "loop-main", "type": "data", "label": "complex_t stream"},
+    {"from": "init-zero_aux", "to": "loop-main", "type": "flow", "label": "sequential"},
+    {"from": "loop-main", "to": "io-data_out", "type": "data", "label": "ALL 26105 complex_t (write-through)"},
+    {"from": "loop-main", "to": "io-startOffset_out", "type": "ctrl", "label": "index_t scalar"},
+    {"from": "hw-window_update", "to": "hw-acc", "type": "data", "label": "delta updates"},
+    {"from": "hw-acc", "to": "hw-trunc_reg", "type": "data", "label": "32b accum_t", "critical_path": true},
+    {"from": "hw-trunc_reg", "to": "hw-dsp_square", "type": "data", "label": "18b trunc_accum_t", "critical_path": true},
+    {"from": "hw-dsp_square", "to": "hw-metric_reg", "type": "data", "label": "36b metric_sq_t", "critical_path": true},
+    {"from": "hw-metric_reg", "to": "hw-cmp", "type": "data", "label": "36b metric_sq_t", "critical_path": true},
+    {"from": "hw-cmp", "to": "hw-ctrl", "type": "ctrl", "label": "detect flag", "critical_path": true},
+    {"from": "mem-data_buf", "to": "hw-window_update", "type": "data", "label": "delayed sample read"},
+    {"from": "mem-aux_products", "to": "hw-window_update", "type": "data", "label": "old product read (0-DSP)"}
+  ],
+  "resource_summary": {
+    "dsp48": {"window_update_mul": 8, "metric_square": 3, "total_csynth": 11},
+    "bram": {"data_buf_32": "ram_s2p auto (distributed or BRAM)", "aux_products_3x16": "ram_1p auto"},
+    "registers": {"accumulators": "3x ap_fixed<32,12>", "deferred_pipeline": "3x trunc_accum_t + 2x metric_sq_t"},
+    "pragmas": ["PIPELINE II=1 (ZERO_AUX, MAIN_LOOP)"]
+  },
+  "types": {
+    "data_t": "ap_fixed<16,4>",
+    "complex_t": "struct {data_t re, im} (32b)",
+    "accum_t": "ap_fixed<32,12>",
+    "trunc_accum_t": "ap_fixed<18,10>",
+    "metric_sq_t": "ap_fixed<36,20>",
+    "index_t": "ap_int<16>"
+  }
+}

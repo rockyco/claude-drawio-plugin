@@ -1,0 +1,241 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="System Integration" id="sys-integration-wlansync">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b style='font-size:16px;'&gt;wlanSync - System Integration (Phase 7)&lt;/b&gt;&lt;br&gt;Post-implementation resource utilization and FIFO depths (v5.0.2)" style="text;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="340" y="15" width="560" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Data Input Port -->
+        <mxCell id="io_data_in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;complex_t&lt;br&gt;26155 samples&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="260" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- M0: Prefilter -->
+        <mxCell id="m0_box" value="&lt;b&gt;M0: Prefilter&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;51-tap symmetric FIR&lt;br&gt;II=1 | CSR=1.0&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=11;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="180" y="255" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- M1: Packet Detect -->
+        <mxCell id="m1_box" value="&lt;b&gt;M1: Packet Detect&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;L-STF detection + write-through&lt;br&gt;II=1 | CSR=1.0&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=11;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="390" y="250" width="170" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- data_duplicator -->
+        <mxCell id="data_dup" value="&lt;b&gt;DATA&lt;br&gt;DUP&lt;/b&gt;" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="610" y="265" width="55" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- startOffset_duplicator -->
+        <mxCell id="offset_dup" value="&lt;b&gt;SPLIT&lt;br&gt;startOff&lt;/b&gt;" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="610" y="430" width="55" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- M2: Coarse CFO -->
+        <mxCell id="m2_box" value="&lt;b&gt;M2: Coarse CFO&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;FSM + DATAFLOW&lt;br&gt;circ_buf[2048] | CSR=4.0&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=11;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="720" y="170" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- M3: Fine Sync -->
+        <mxCell id="m3_box" value="&lt;b&gt;M3: Fine Sync&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;3x hls::FIR IP, SP=16&lt;br&gt;Karatsuba | CSR=1.0&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=11;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="950" y="170" width="170" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- fineOffset_duplicator -->
+        <mxCell id="fine_dup" value="&lt;b&gt;SPLIT&lt;br&gt;fineOff&lt;/b&gt;" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1165" y="275" width="55" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- M4: Fine CFO Apply -->
+        <mxCell id="m4_box" value="&lt;b&gt;M4: Fine CFO Apply&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;Dual-async FSM + DATAFLOW&lt;br&gt;circ_buf[8192] | CSR=162.7&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=11;arcSize=12;" vertex="1" parent="1">
+          <mxGeometry x="960" y="370" width="190" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Data Output Port -->
+        <mxCell id="io_data_out" value="&lt;b&gt;data_out&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;complex_t&lt;br&gt;26030 samples&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="375" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Control Output: coarseFreqOff -->
+        <mxCell id="io_coarse_freq" value="&lt;b&gt;coarseFreqOff&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;freq_t&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="100" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Control Output: fineOffset -->
+        <mxCell id="io_fine_offset" value="&lt;b&gt;fineOffset&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;index_t&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="240" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Control Output: fineFreqOff -->
+        <mxCell id="io_fine_freq" value="&lt;b&gt;fineFreqOff&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;freq_t&lt;/font&gt;" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="470" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- === DATA ARROWS === -->
+        <mxCell id="arrow_in_m0" value="26155" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="io_data_in" target="m0_box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_m0_m1" value="26105 (d=64)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m0_box" target="m1_box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_m1_dup" value="26105" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m1_box" target="data_dup" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_dup_m2" value="d=2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="data_dup" target="m2_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_dup_m4" value="d=2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="data_dup" target="m4_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="700" y="405" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_m2_m3" value="640 (d=680)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m2_box" target="m3_box" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_m4_out" value="26030 (d=128)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m4_box" target="io_data_out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- === CONTROL ARROWS === -->
+        <mxCell id="arrow_m1_offdup" value="startOffset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m1_box" target="offset_dup" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="475" y="452" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_off_m2" value="d=2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="offset_dup" target="m2_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="452" />
+              <mxPoint x="680" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_off_m4" value="d=2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="offset_dup" target="m4_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="637" y="490" />
+              <mxPoint x="940" y="490" />
+              <mxPoint x="940" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_m2_freq" value="coarseFreqOff" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m2_box" target="io_coarse_freq" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="805" y="125" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_m3_fdup" value="fineOffset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m3_box" target="fine_dup" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1192" y="240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_fine_m4" value="to M4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fine_dup" target="m4_box" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1192" y="370" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow_fine_out" value="fineOffset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fine_dup" target="io_fine_offset" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arrow_m4_ffreq" value="fineFreqOff" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="m4_box" target="io_fine_freq" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1055" y="495" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- === RESOURCE SUMMARY BOX === -->
+        <mxCell id="resource_box" value="&lt;table style='font-size:10px;border-collapse:collapse;'&gt;&lt;tr&gt;&lt;td colspan='4' style='font-weight:bold;font-size:12px;padding-bottom:6px;'&gt;Resource Utilization (post-impl, xc7z020clg400-1)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;DSP48E1&lt;/b&gt;&lt;/td&gt;&lt;td&gt;170 / 176 (77.3%)&lt;/td&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;BRAM&lt;/b&gt;&lt;/td&gt;&lt;td&gt;48 / 140 RAMB18-eq (34.3%)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;LUT&lt;/b&gt;&lt;/td&gt;&lt;td&gt;9,561 / 26,600 (35.9%)&lt;/td&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;FF&lt;/b&gt;&lt;/td&gt;&lt;td&gt;15,113 / 53,200 (28.4%)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;WNS&lt;/b&gt;&lt;/td&gt;&lt;td&gt;+0.057 ns (MET)&lt;/td&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;Fmax&lt;/b&gt;&lt;/td&gt;&lt;td&gt;100.6 MHz&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;Latency&lt;/b&gt;&lt;/td&gt;&lt;td&gt;33,065 cycles&lt;/td&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;Ratio&lt;/b&gt;&lt;/td&gt;&lt;td&gt;1.264x (target &amp;lt; 1.5x)&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style='padding:2px 10px;'&gt;&lt;b&gt;COSIM&lt;/b&gt;&lt;/td&gt;&lt;td colspan='3'&gt;PASS&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="560" width="520" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- === LEGEND === -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;dashed=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="30" y="60" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="65" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_data_line" value="" style="endArrow=block;endFill=1;strokeColor=#1971c2;strokeWidth=2;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="45" y="100" as="sourcePoint" />
+            <mxPoint x="100" y="100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_data_text" value="Data stream (N samples, d=FIFO depth)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="108" y="92" width="180" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_ctrl_line" value="" style="endArrow=block;endFill=1;strokeColor=#e03131;strokeWidth=1;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="45" y="122" as="sourcePoint" />
+            <mxPoint x="100" y="122" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend_ctrl_text" value="Control signal (async)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="108" y="114" width="150" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_mod_box" value="M#" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d8ff;strokeColor=#1971c2;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="45" y="140" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_mod_text" value="Processing module" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="108" y="140" width="130" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_split_box" value="S" style="shape=rhombus;whiteSpace=wrap;html=1;fillColor=#e9ecef;strokeColor=#868e96;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="53" y="166" width="25" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_split_text" value="Inline duplicator (FP-SPLIT)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="108" y="166" width="160" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_io_data" value="I/O" style="shape=ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="45" y="190" width="40" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_io_text" value="Data / Control port" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="108" y="188" width="130" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Bottleneck annotation -->
+        <mxCell id="bottleneck_note" value="&lt;font color='#e03131'&gt;&lt;b&gt;Bottleneck:&lt;/b&gt; M3 fine_sync 160-tap FIR (SP=16) - dominates system latency.&lt;br&gt;M4 waits ~7000 cycles for fineOffset from M3.&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="560" width="450" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Critical path annotation -->
+        <mxCell id="crit_path_note" value="&lt;font color='#495057'&gt;&lt;b&gt;Critical Path:&lt;/b&gt; M0 -&gt; M1 -&gt; M2 -&gt; M3 (data) | M3 -&gt; M4 (fineOffset wait)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="600" width="450" height="25" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

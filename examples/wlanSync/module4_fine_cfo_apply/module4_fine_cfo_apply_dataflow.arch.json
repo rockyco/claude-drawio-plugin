@@ -1,0 +1,22 @@
+{
+  "title": "module4_fine_cfo_apply - DATAFLOW Decomposition",
+  "type": "dataflow",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "nodes": {
+    "extract_lltf": {"name": "extract_lltf", "desc": "EXTRACT: FSM fills circ_buf, outputs L-LTF (160) + passthrough (~26k)"},
+    "compute_fine_cfo": {"name": "compute_fine_cfo", "desc": "COMPUTE: autocorrelation on 160 L-LTF samples, CFO estimation"},
+    "apply_correction": {"name": "apply_correction", "desc": "APPLY: NCO-based frequency correction on ~26k passthrough samples"}
+  },
+  "stages": [
+    {"name": "extract_lltf", "role": "EXTRACT", "ii": 1},
+    {"name": "compute_fine_cfo", "role": "COMPUTE", "ii": 1},
+    {"name": "apply_correction", "role": "APPLY", "ii": 1}
+  ],
+  "edges": [
+    {"from": "extract_lltf", "to": "compute_fine_cfo", "type": "data", "label": "lltf_stream (160 samples)"},
+    {"from": "extract_lltf", "to": "apply_correction", "type": "data", "label": "passthrough_stream (~26k samples)"},
+    {"from": "compute_fine_cfo", "to": "apply_correction", "type": "ctrl", "label": "cfo_stream (scalar freq_t)"}
+  ]
+}

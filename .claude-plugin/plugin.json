@@ -1,0 +1,9 @@
+{
+  "name": "drawio",
+  "version": "1.0.0",
+  "description": "Generate Draw.io FPGA/HLS architecture diagrams - system topology, DATAFLOW, FSM, RTL microarch",
+  "author": {
+    "name": "OpenWLAN"
+  },
+  "license": "MIT"
+}

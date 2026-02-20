@@ -1,0 +1,23 @@
+{
+  "title": "module2_coarse_cfo - DATAFLOW Decomposition",
+  "type": "dataflow",
+  "phase": 5,
+  "version": "5.0.2",
+  "last_enriched_phase": 6,
+  "notes": ["3-stage: EXTRACT(FSM+circ_buf[2048]) -> COMPUTE(autocorr+atan2) -> APPLY(NCO correction)", "EXTRACT uses FP-ASYNC: blocking data read, non-blocking startOffset poll"],
+  "nodes": {
+    "extract_with_offset": {"name": "extract_with_offset", "desc": "EXTRACT: FSM + circ_buf[2048], polls startOffset, outputs L-STF(160) + passthrough(640)"},
+    "compute_cfo": {"name": "compute_cfo", "desc": "COMPUTE: autocorrelation on 160 LSTF samples, CORDIC atan2 for CFO"},
+    "apply_correction": {"name": "apply_correction", "desc": "APPLY: NCO-based quarter-wave frequency correction on 640 passthrough samples"}
+  },
+  "stages": [
+    {"name": "extract_with_offset", "role": "EXTRACT", "ii": 1},
+    {"name": "compute_cfo", "role": "COMPUTE", "ii": 1},
+    {"name": "apply_correction", "role": "APPLY", "ii": 1}
+  ],
+  "edges": [
+    {"from": "extract_with_offset", "to": "compute_cfo", "type": "data", "label": "lstf_stream (160 samples, depth=160)"},
+    {"from": "extract_with_offset", "to": "apply_correction", "type": "data", "label": "passthrough_stream (640 samples, depth=680)"},
+    {"from": "compute_cfo", "to": "apply_correction", "type": "ctrl", "label": "cfo_stream (scalar freq_t, depth=4)"}
+  ]
+}

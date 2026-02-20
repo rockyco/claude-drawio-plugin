@@ -1,0 +1,31 @@
+{
+  "title": "module1_packet_detect - Architecture",
+  "type": "module_architecture",
+  "phase": 5,
+  "version": "5.0.3",
+  "last_enriched_phase": 6,
+  "module_pattern": "Case_B",
+  "patterns_applied": ["FP-MATOPT1b", "FP-MATOPT8", "FP-DETECTION", "FP-NOBREAK", "FP-NOBREAK-CE", "FP-MEMSEL"],
+  "nodes": {
+    "in-data_in": {"name": "data_in", "desc": "Input: complex_t, 26105 filtered samples"},
+    "core": {"name": "module1_packet_detect", "desc": "Single MAIN_LOOP: write-through all N+2 iterations, incremental sliding window, deferred metric pipeline, conditional detection (II=1)"},
+    "mem-data_buf": {"name": "data_buf", "desc": "Circular BRAM [32], D-sample delay, FP-MEMSEL cat 3 (no PARTITION)"},
+    "mem-aux_products": {"name": "Aux Products", "desc": "3x circular [16]: C_re_products, C_im_products, P_products (MATOPT8, 0-DSP subtract-old)"},
+    "out-data_out": {"name": "data_out", "desc": "Output: complex_t, ALL 26105 samples (write-through to duplicator)"},
+    "out-startOffset_out": {"name": "startOffset_out", "desc": "Output: index_t, detection position scalar (to duplicator)"}
+  },
+  "edges": [
+    {"from": "in-data_in", "to": "core", "type": "data"},
+    {"from": "core", "to": "out-data_out", "type": "data"},
+    {"from": "core", "to": "out-startOffset_out", "type": "ctrl"},
+    {"from": "mem-data_buf", "to": "core", "type": "data", "label": "delayed sample read"},
+    {"from": "mem-aux_products", "to": "core", "type": "data", "label": "old product read/write"}
+  ],
+  "hardware_params": {
+    "window_size": 16,
+    "data_buf_size": 32,
+    "aux_buf_size": 16,
+    "sustain_len": 24,
+    "pipeline_defer": 2
+  }
+}

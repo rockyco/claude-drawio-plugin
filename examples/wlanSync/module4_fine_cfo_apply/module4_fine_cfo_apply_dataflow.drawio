@@ -1,0 +1,271 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="M4 DATAFLOW" id="m4-dataflow">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;module4_fine_cfo_apply - DATAFLOW Decomposition&lt;/b&gt;&lt;br&gt;#pragma HLS DATAFLOW - 3-stage EXTRACT/COMPUTE/APPLY" style="text;html=1;align=left;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="520" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- I/O Ports -->
+        <mxCell id="io-data-in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;~26036 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="300" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="io-fineOffset-in" value="&lt;b&gt;fineOffset_in&lt;/b&gt;&lt;br&gt;index_t&lt;br&gt;(async)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="150" width="110" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="io-data-out" value="&lt;b&gt;data_out&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;~26030 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="380" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="io-freq-out" value="&lt;b&gt;fineCfoFreq_out&lt;/b&gt;&lt;br&gt;freq_t" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1350" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 1: EXTRACT -->
+        <mxCell id="stage-extract-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="170" y="70" width="320" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-extract-label" value="&lt;b&gt;EXTRACT&lt;/b&gt;&lt;br&gt;extract_lltf&lt;br&gt;II=1" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="260" y="75" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extract-fsm" value="&lt;b&gt;5-State FSM&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px'&gt;WAIT_CTRL&lt;br&gt;WAIT_DATA_READY&lt;br&gt;EXTRACT_LLTF&lt;br&gt;PASSTHROUGH&lt;br&gt;DONE&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=10;verticalAlign=top;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="200" y="150" width="140" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="extract-circbuf" value="&lt;b&gt;circ_buf[16384]&lt;/b&gt;&lt;br&gt;complex_t&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;26 BRAM18&lt;br&gt;Sized for M3 latency&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="200" y="310" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- EXTRACT output streams -->
+        <mxCell id="fifo-lltf" value="&lt;b&gt;lltf_stream&lt;/b&gt;&lt;br&gt;160 samples&lt;br&gt;depth=168" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="370" y="200" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-passthrough" value="&lt;b&gt;passthrough_stream&lt;/b&gt;&lt;br&gt;~26k samples&lt;br&gt;depth=2048" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="370" y="430" width="110" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fifo-offset" value="&lt;b&gt;offset_stream&lt;/b&gt;&lt;br&gt;index_t&lt;br&gt;depth=4" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#e03131;fontSize=9;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="370" y="550" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 2: COMPUTE -->
+        <mxCell id="stage-compute-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="530" y="70" width="280" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-compute-label" value="&lt;b&gt;COMPUTE&lt;/b&gt;&lt;br&gt;compute_fine_cfo&lt;br&gt;II=1" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="600" y="75" width="160" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="compute-autocorr" value="&lt;b&gt;Autocorrelation&lt;/b&gt;&lt;br&gt;160 L-LTF samples&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;Complex conjugate product&lt;br&gt;+ accumulation&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="560" y="150" width="220" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="compute-cordic" value="&lt;b&gt;CORDIC atan2&lt;/b&gt;&lt;br&gt;16-bit, 16 iterations&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;CFO angle extraction&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="580" y="250" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- COMPUTE output -->
+        <mxCell id="fifo-cfo" value="&lt;b&gt;cfo_stream&lt;/b&gt;&lt;br&gt;freq_t scalar&lt;br&gt;depth=4" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#e03131;fontSize=9;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="850" y="260" width="100" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Stage 3: APPLY -->
+        <mxCell id="stage-apply-border" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="990" y="70" width="310" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="stage-apply-label" value="&lt;b&gt;APPLY&lt;/b&gt;&lt;br&gt;apply_correction&lt;br&gt;II=1" style="text;html=1;align=center;verticalAlign=top;fontSize=11;fontColor=#94a3b8;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="75" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apply-nco" value="&lt;b&gt;NCO LUT&lt;/b&gt;&lt;br&gt;sin/cos[1024]&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;Quarter-wave symmetry&lt;br&gt;ROM_2P, 1 RAMB18&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="150" width="140" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apply-phase-acc" value="&lt;b&gt;Phase Accumulator&lt;/b&gt;&lt;br&gt;phi += delta_phase" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99e9f2;strokeColor=#0c8599;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="260" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="apply-rotation" value="&lt;b&gt;Complex Rotation&lt;/b&gt;&lt;br&gt;data * exp(-j*phi)&lt;br&gt;&lt;font color='#6b7280' style='font-size:9px'&gt;4 DSP (complex MUL)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#1971c2;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="410" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Edge: data_in -> FSM -->
+        <mxCell id="edge-in-fsm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="io-data-in" target="extract-fsm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Edge: ctrl -> FSM -->
+        <mxCell id="edge-ctrl-fsm" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;" edge="1" source="io-fineOffset-in" target="extract-fsm" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- FSM -> circ_buf -->
+        <mxCell id="edge-fsm-circbuf" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;" edge="1" source="extract-fsm" target="extract-circbuf" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- circ_buf -> lltf_stream FIFO -->
+        <mxCell id="edge-circ-lltf" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="extract-circbuf" target="fifo-lltf" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="350" y="340" />
+              <mxPoint x="350" y="225" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- circ_buf -> passthrough FIFO -->
+        <mxCell id="edge-circ-pass" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="extract-circbuf" target="fifo-passthrough" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- FSM -> offset FIFO -->
+        <mxCell id="edge-fsm-offset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;" edge="1" source="extract-fsm" target="fifo-offset" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="270" y="575" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- lltf FIFO -> autocorr -->
+        <mxCell id="edge-lltf-autocorr" value="160 samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fifo-lltf" target="compute-autocorr" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- autocorr -> cordic -->
+        <mxCell id="edge-autocorr-cordic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="compute-autocorr" target="compute-cordic" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cordic -> cfo FIFO -->
+        <mxCell id="edge-cordic-cfo" value="freq_t" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="compute-cordic" target="fifo-cfo" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cfo FIFO -> phase accumulator -->
+        <mxCell id="edge-cfo-phase" value="delta_phase" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fifo-cfo" target="apply-phase-acc" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- passthrough FIFO -> rotation -->
+        <mxCell id="edge-pass-rotation" value="~26k samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fifo-passthrough" target="apply-rotation" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="455" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- offset FIFO -> APPLY -->
+        <mxCell id="edge-offset-apply" value="offset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fifo-offset" target="apply-rotation" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="960" y="575" />
+              <mxPoint x="960" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- phase acc -> NCO -->
+        <mxCell id="edge-phase-nco" value="index" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="apply-phase-acc" target="apply-nco" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1200" y="285" />
+              <mxPoint x="1200" y="190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- NCO -> rotation -->
+        <mxCell id="edge-nco-rotation" value="sin/cos" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="apply-nco" target="apply-rotation" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1240" y="190" />
+              <mxPoint x="1240" y="445" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- rotation -> data_out -->
+        <mxCell id="edge-rotation-out" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;html=1;" edge="1" source="apply-rotation" target="io-data-out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- cordic -> freq_out -->
+        <mxCell id="edge-cordic-freqout" value="fineCfoFreq" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="compute-cordic" target="io-freq-out" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="380" />
+              <mxPoint x="940" y="380" />
+              <mxPoint x="940" y="280" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#d1d5db;" vertex="1" parent="1">
+          <mxGeometry x="20" y="770" width="420" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="30" y="775" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-data-line" value="" style="endArrow=block;endFill=1;strokeColor=#1971c2;strokeWidth=2;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="30" y="810" as="sourcePoint" />
+            <mxPoint x="80" y="810" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-data-text" value="Data stream (hls::stream)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="800" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-ctrl-line" value="" style="endArrow=block;endFill=1;strokeColor=#e03131;strokeWidth=1;dashed=1;html=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="30" y="835" as="sourcePoint" />
+            <mxPoint x="80" y="835" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend-ctrl-text" value="Control / scalar signal" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="825" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fifo-box" value="d=N" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#eff6ff;strokeColor=#1971c2;fontSize=9;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="30" y="855" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fifo-text" value="Internal FIFO (hls::stream, depth=N)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="90" y="853" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-stage-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8fafc;strokeColor=#94a3b8;dashed=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="250" y="800" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-stage-text" value="DATAFLOW stage" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="310" y="798" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fsm-box" value="FSM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="250" y="825" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-fsm-text" value="FSM controller" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="310" y="823" width="120" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-bram-box" value="BRAM" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#4f46e5;dashed=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="250" y="850" width="50" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-bram-text" value="BRAM / NCO LUT" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="310" y="848" width="120" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

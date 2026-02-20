@@ -1,0 +1,190 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="M2 FSM State Diagram" id="m2-fsm">
+    <mxGraphModel dx="1200" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1600" pageHeight="1200">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;module2_coarse_cfo - FSM State Diagram (EXTRACT Stage)&lt;/b&gt;&lt;br&gt;FP-ASYNC: blocking data read + non-blocking startOffset poll in circ_buf[2048]" style="text;html=1;align=left;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="20" y="10" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Data streaming path annotation -->
+        <mxCell id="anno-streaming" value="&lt;font style='font-size:10px;color:#6b7280;'&gt;Data path: data_in -&gt; circ_buf[2048] -&gt; lstf_out (160 samples) + passthrough_out (640 samples)&lt;br&gt;Control path: startOffset_in (async, non-blocking poll in WAIT_CTRL state)&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="50" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Initial marker -->
+        <mxCell id="fsm-init" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="50" y="195" width="20" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- State: WAIT_CTRL -->
+        <mxCell id="state-wait-ctrl" value="&lt;b&gt;WAIT_CTRL&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px;'&gt;blocking data_in.read()&lt;br&gt;write to circ_buf&lt;br&gt;non-blocking startOffset poll&lt;br&gt;n++&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=11;arcSize=15;" vertex="1" parent="1">
+          <mxGeometry x="100" y="150" width="170" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- State: WAIT_DATA_READY -->
+        <mxCell id="state-wait-data" value="&lt;b&gt;WAIT_DATA_READY&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px;'&gt;blocking data_in.read()&lt;br&gt;write to circ_buf&lt;br&gt;wait until enough data&lt;br&gt;for extraction&lt;br&gt;n++&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=11;arcSize=15;" vertex="1" parent="1">
+          <mxGeometry x="340" y="150" width="180" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- State: EXTRACT_STATE -->
+        <mxCell id="state-extract" value="&lt;b&gt;EXTRACT_STATE&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px;'&gt;blocking data_in.read()&lt;br&gt;write to circ_buf&lt;br&gt;replay from circ_buf:&lt;br&gt;lstf_out (160) +&lt;br&gt;passthrough_out (640)&lt;br&gt;extract_count++&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=11;arcSize=15;" vertex="1" parent="1">
+          <mxGeometry x="590" y="140" width="170" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- State: DONE -->
+        <mxCell id="state-done" value="&lt;b&gt;DONE&lt;/b&gt;&lt;br&gt;&lt;font style='font-size:9px;'&gt;blocking data_in.read()&lt;br&gt;consume remaining samples&lt;br&gt;write nothing downstream&lt;br&gt;(detect=false: output_len=0)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=11;arcSize=15;" vertex="1" parent="1">
+          <mxGeometry x="830" y="150" width="170" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Terminal marker -->
+        <mxCell id="fsm-terminal" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;aspect=fixed;strokeWidth=3;" vertex="1" parent="1">
+          <mxGeometry x="900" y="310" width="30" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Initial transition -->
+        <mxCell id="edge-init" value="reset" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#495057;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fsm-init" target="state-wait-ctrl" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Self-loop: WAIT_CTRL (poll fails) -->
+        <mxCell id="self-wait-ctrl" value="startOffset_in.empty()&lt;br&gt;(keep polling)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;fontColor=#d97706;labelBackgroundColor=#FFFFFF;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" source="state-wait-ctrl" target="state-wait-ctrl" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="142" y="100" />
+              <mxPoint x="228" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Transition: WAIT_CTRL -> WAIT_DATA_READY -->
+        <mxCell id="edge-wc-wd" value="ctrl_received = true" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#495057;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="state-wait-ctrl" target="state-wait-data" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Self-loop: WAIT_DATA_READY -->
+        <mxCell id="self-wait-data" value="n &lt; start_off +&lt;br&gt;SEARCH_LEN - 1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;fontColor=#d97706;labelBackgroundColor=#FFFFFF;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" source="state-wait-data" target="state-wait-data" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="385" y="100" />
+              <mxPoint x="475" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Transition: WAIT_DATA_READY -> EXTRACT_STATE -->
+        <mxCell id="edge-wd-ex" value="n &gt;= start_off +&lt;br&gt;SEARCH_LEN - 1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#495057;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="state-wait-data" target="state-extract" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Self-loop: EXTRACT_STATE -->
+        <mxCell id="self-extract" value="extract_count &lt;&lt;br&gt;SEARCH_LEN" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;fontColor=#d97706;labelBackgroundColor=#FFFFFF;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" source="state-extract" target="state-extract" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="632" y="90" />
+              <mxPoint x="718" y="90" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Transition: EXTRACT_STATE -> DONE -->
+        <mxCell id="edge-ex-done" value="extract_count &gt;=&lt;br&gt;SEARCH_LEN" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#495057;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="state-extract" target="state-done" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Self-loop: DONE -->
+        <mxCell id="self-done" value="n &lt;&lt;br&gt;num_samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d97706;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;fontColor=#d97706;labelBackgroundColor=#FFFFFF;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" source="state-done" target="state-done" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="872" y="100" />
+              <mxPoint x="958" y="100" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Transition: DONE -> terminal -->
+        <mxCell id="edge-done-term" value="n == num_samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#495057;strokeWidth=1;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="state-done" target="fsm-terminal" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Data streaming path below states -->
+        <mxCell id="port-data-in" value="&lt;b&gt;data_in&lt;/b&gt;&lt;br&gt;complex_t" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="100" y="380" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="port-ctrl-in" value="&lt;b&gt;startOffset_in&lt;/b&gt;&lt;br&gt;index_t" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#db2777;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="100" y="440" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="buf-circ" value="&lt;b&gt;circ_buf[2048]&lt;/b&gt;&lt;br&gt;BRAM" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#e0e7ff;strokeColor=#4f46e5;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="320" y="380" width="110" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="port-lstf-out" value="&lt;b&gt;lstf_out&lt;/b&gt;&lt;br&gt;160 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="560" y="370" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="port-pass-out" value="&lt;b&gt;passthrough_out&lt;/b&gt;&lt;br&gt;640 samples" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="560" y="430" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Data path edges -->
+        <mxCell id="edge-datain-buf" value="blocking read" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="port-data-in" target="buf-circ" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-ctrl-poll" value="non-blocking poll" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;strokeWidth=1;dashed=1;endArrow=block;endFill=1;fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="port-ctrl-in" target="state-wait-ctrl" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="60" y="460" />
+              <mxPoint x="60" y="260" />
+              <mxPoint x="185" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="edge-buf-lstf" value="160 samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="buf-circ" target="port-lstf-out" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-buf-pass" value="640 samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="buf-circ" target="port-pass-out" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="500" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#495057;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="360" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="365" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-state-box" value="STATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="390" width="60" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-state-text" value="FSM state (enum + switch)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="780" y="392" width="170" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-self-text" value="&lt;font color='#d97706'&gt;---&gt;&lt;/font&gt; Self-loop (guard condition)" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="417" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-fwd-text" value="---&gt; Forward transition" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="710" y="437" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-init-dot" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;aspect=fixed;" vertex="1" parent="1">
+          <mxGeometry x="720" y="458" width="12" height="12" as="geometry" />
+        </mxCell>
+        <mxCell id="leg-init-text" value="Initial state marker" style="text;html=1;align=left;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="740" y="455" width="170" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
