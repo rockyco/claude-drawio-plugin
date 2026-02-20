@@ -480,6 +480,57 @@ Layout for Phase 6 detailed pipeline views.
 
 ---
 
+## 9. Edge Overlap Prevention
+
+### Minimum Clearance Rule
+
+Parallel edge segments on the same axis must be >= 30px apart. When two edges
+share a vertical corridor (same x-coordinate) or horizontal corridor (same
+y-coordinate), offset one edge's waypoints by at least 30px.
+
+```
+OVERLAP (15px gap):           FIXED (30px gap):
+  x=960 |  | x=960             x=930 |     | x=960
+        |  |                         |     |
+        |  |                         |     |
+```
+
+### Shared-Target Fan-In Rule
+
+When multiple edges converge on the same target shape, assign distinct entry
+corridors. Each edge must approach from a unique x (for vertical entry) or
+unique y (for horizontal entry), with >= 30px between corridors.
+
+```xml
+<!-- BAD: Two edges both route through x=960 to reach the same target -->
+<mxPoint x="960" y="455" />  <!-- edge A waypoint -->
+<mxPoint x="960" y="470" />  <!-- edge B waypoint -->
+
+<!-- GOOD: Offset edge A to x=930 for 30px clearance -->
+<mxPoint x="930" y="455" />  <!-- edge A waypoint -->
+<mxPoint x="960" y="470" />  <!-- edge B waypoint -->
+```
+
+### Shared-Source Fan-Out Rule
+
+Same principle for multiple edges leaving one source. Each exit path must use
+a distinct corridor with >= 30px separation between parallel segments.
+
+### Post-Placement Audit Checklist
+
+After placing all edges, run this mental audit:
+
+1. **Vertical corridors**: List all waypoint x-coordinates. Flag any duplicates
+   where the corresponding y-ranges overlap or are within 30px.
+2. **Horizontal corridors**: List all waypoint y-coordinates. Flag any
+   duplicates where the corresponding x-ranges overlap or are within 30px.
+3. **Fan-in/fan-out**: For edges sharing a source or target, verify distinct
+   entry/exit corridors with >= 30px between parallel segments.
+4. **Near-miss check**: Edges within 15px of each other visually merge at
+   normal zoom levels. Treat anything < 30px as an overlap.
+
+---
+
 ## Appendix: Minimal Working Template
 
 ```xml

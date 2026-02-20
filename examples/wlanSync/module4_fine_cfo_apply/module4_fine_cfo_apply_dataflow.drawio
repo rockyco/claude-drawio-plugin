@@ -164,7 +164,7 @@
         <mxCell id="edge-pass-rotation" value="~26k samples" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;endArrow=block;endFill=1;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;" edge="1" source="fifo-passthrough" target="apply-rotation" parent="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="960" y="455" />
+              <mxPoint x="930" y="455" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -184,7 +184,7 @@
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1200" y="285" />
-              <mxPoint x="1200" y="190" />
+              <mxPoint x="1200" y="240" />
             </Array>
           </mxGeometry>
         </mxCell>
