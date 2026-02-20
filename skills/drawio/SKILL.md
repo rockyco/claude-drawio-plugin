@@ -95,6 +95,10 @@ For non-straight routing (L-shaped, around obstacles):
 - `Array as="points"` - Explicit waypoints for manual routing
 - Orthogonal routing handles obstacle avoidance automatically
 
+**Edge clearance**: When multiple edges share waypoint corridors (same x for
+vertical segments, same y for horizontal), offset by >= 30px to prevent visual
+merging. See `references/best-practices.md` Section 9 for full audit checklist.
+
 ### Standalone Text (Label)
 
 ```xml
@@ -399,10 +403,11 @@ When generating a draw.io diagram:
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
 6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo)
-7. **Add labels** - Title, subtitle, bit-width annotations, phase labels
-8. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
-9. **Add legend** - Bottom-right box with arrow/block color key
-10. **Generate .arch.json** - Companion file with graph structure
+7. **Audit edge overlaps** - Check all waypoint x/y values. Parallel segments within 30px must be offset. Fan-in/fan-out edges to same target/source need distinct corridors (>= 30px apart)
+8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
+9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
+10. **Add legend** - Bottom-right box with arrow/block color key
+11. **Generate .arch.json** - Companion file with graph structure
 
 ### Z-Order
 
