@@ -531,6 +531,105 @@ AFTER:  EXTRACT border height=570, APPLY border height=570  (-50px)
 
 Formula: `container_height = (max_y_of_children + child_height) - container_y + 30`
 
+##### T7: Center Alignment for Vertical Connections
+
+**Problem**: Shapes connected by top-to-bottom arrows have different widths
+but the same left-x, causing "vertical" arrows to angle.
+
+**Rule**: When shapes are connected by vertical arrows (exitX=0.5 to
+entryX=0.5), all connected shapes must share the same center-x. Compute
+each shape's x-position from its width: `shape.x = center_x - width / 2`.
+
+```
+BEFORE (left-aligned, angled arrows):
+
+  x=910  [NCO LUT    w=130]     center=975
+           |  (angled)
+  x=910  [Phase Acc   w=120]    center=970
+           |  (angled)
+  x=910  [Complex MUL w=145]    center=982.5
+
+AFTER (center-aligned, straight arrows):
+
+  x=910  [NCO LUT    w=130]     center=975
+           |  (straight)
+  x=915  [Phase Acc   w=120]    center=975
+           |  (straight)
+  x=903  [Complex MUL w=145]    center=975.5
+```
+
+```xml
+<!-- Center-aligned at center_x=975 -->
+<mxCell id="apply-nco" style="...">
+  <mxGeometry x="910" y="130" width="130" height="65" as="geometry"/>
+  <!-- center = 910 + 65 = 975 -->
+</mxCell>
+<mxCell id="apply-phase-acc" style="...">
+  <mxGeometry x="915" y="225" width="120" height="50" as="geometry"/>
+  <!-- center = 915 + 60 = 975 -->
+</mxCell>
+<mxCell id="apply-cmul" style="...">
+  <mxGeometry x="903" y="330" width="145" height="65" as="geometry"/>
+  <!-- center = 903 + 72.5 = 975.5 (sub-pixel, visually identical) -->
+</mxCell>
+```
+
+**Waypoint update**: When repositioning a shape for center alignment, update
+all edge waypoints that target that shape's center. For example, if a
+passthrough edge's waypoint was `x=982` (old center of Complex MUL), update
+to `x=975` (new center).
+
+##### T8: Label-Edge Clearance
+
+**Problem**: FIFO label boxes or annotation labels overlap with edge routing
+paths, causing edges to visually cross through the label text.
+
+**Rule**: After placing all edges, verify that no annotation label overlaps
+an edge path segment. Labels must have >= 15px clearance from the nearest
+edge segment (both horizontal and vertical).
+
+**Z-order fix**: In addition to clearance, place annotation labels AFTER all
+edges in the XML document order so they render on top (Layer 4). This
+ensures that even if an edge passes near a label, the label's background
+covers the edge line underneath.
+
+```
+BEFORE: passthrough_stream label at y=432-462, edge at y=445
+        -> edge crosses through label text
+
+AFTER:  passthrough_stream label at y=400-430, edge at y=445
+        -> 15px clearance, label above edge
+```
+
+```xml
+<!-- XML document order matters for z-order -->
+
+<!-- Layer 1-2: Stage borders, then component shapes -->
+<mxCell id="stage-extract-border" ... vertex="1" parent="1"/>
+<mxCell id="extract-fsm" ... vertex="1" parent="1"/>
+
+<!-- Layer 3: All edges -->
+<mxCell id="edge-passthrough" ... edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="245" y="445"/>
+      <mxPoint x="975" y="445"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<!-- Layer 4 (AFTER edges): Annotation labels render on top -->
+<mxCell id="fifo-passthrough-label" value="passthrough_stream"
+        style="rounded=1;fillColor=#eff6ff;strokeColor=#1971c2;..."
+        vertex="1" parent="1">
+  <mxGeometry x="540" y="400" width="155" height="30" as="geometry"/>
+  <!-- y=400, 45px ABOVE edge at y=445 -->
+</mxCell>
+
+<!-- Layer 4: Legend box (also after edges) -->
+<mxCell id="legend-box" ... vertex="1" parent="1"/>
+```
+
 ### Bit-Width Annotations
 
 Place bit-width labels on edges using `mxCell` with `style="text;..."`:
@@ -700,6 +799,7 @@ Every Draw.io XML must start with these two root cells:
 | Mistake | Symptom | Fix |
 |---------|---------|-----|
 | Z-order: blocks before containers | Blocks hidden behind containers | Place container cells BEFORE their children in XML |
+| Z-order: FIFO labels before edges | Edges cover FIFO label boxes | 4-layer order: borders, shapes, edges, annotations (T8) |
 | Edge without `source`/`target` | Disconnected floating arrow | Set `source` and `target` to valid cell IDs |
 | Overlapping text labels | Unreadable text clutter | Offset labels by 15-20px, use `labelPosition` |
 | Arrow labels on top of shapes | Label obscured by fill | Use `edgeLabel` or offset the label geometry |
@@ -714,6 +814,9 @@ Every Draw.io XML must start with these two root cells:
 | Auto-routing in crowded area | Different renderers choose different paths | Add explicit waypoints for every segment (T3) |
 | Cross-stage edge through content | Arrow weaves through internal blocks | Route outside stage content areas (T5) |
 | Container with 50px+ excess whitespace | Wasted vertical space, legend too far | Tighten to content + 30px padding (T6) |
+| Vertical shapes with same left-x but different widths | Angled "vertical" arrows between them | Center-align: `x = center - width/2` (T7) |
+| FIFO label boxes defined before edges in XML | Edges render on top, covering FIFO labels | Move FIFO labels to Layer 4 (after all edges) (T8) |
+| Annotation label overlapping edge route | Edge line crosses through label text | Reposition label with >= 15px clearance from edge (T8) |
 
 ### Style String Hygiene
 
@@ -894,6 +997,12 @@ After placing all edges, run this audit in two phases:
     - route outside stage content areas where possible.
 12. **Container tightening**: Verify container heights match content with
     30px padding (T6). Move legend/resource boxes if containers were shrunk.
+13. **Vertical arrow alignment**: For shapes connected by top-to-bottom
+    arrows (exitX=0.5, entryX=0.5), verify all share the same center-x.
+    Formula: `shape.x = center_x - width / 2` (T7).
+14. **Label-edge clearance**: Verify no FIFO label or annotation box
+    overlaps an edge path. Min 15px clearance. Confirm labels are placed
+    AFTER edges in XML for correct z-order (T8).
 
 ---
 
