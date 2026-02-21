@@ -99,6 +99,51 @@ For non-straight routing (L-shaped, around obstacles):
 vertical segments, same y for horizontal), offset by >= 30px to prevent visual
 merging. See `references/best-practices.md` Section 9 for full audit checklist.
 
+### Edge Quality Rules (BLOCKING)
+
+These 5 rules prevent the most common visual defects in generated diagrams.
+Violation of any rule produces a diagram that looks broken when rendered.
+
+1. **No Corner Connections** - Edge endpoints (`exitX/exitY`, `entryX/entryY`)
+   must use midpoint values only: `(0,0.5)`, `(0.5,0)`, `(1,0.5)`, `(0.5,1)`.
+   Never use corners `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)` - orthogonal routing
+   creates a diagonal stub from the corner that looks broken.
+   ```
+   GOOD: exitX=1;exitY=0.5;    (right center)
+   BAD:  exitX=1;exitY=1;      (bottom-right corner - creates diagonal)
+   ```
+
+2. **No Arrow Overlap** - No two edge line segments may share the same pixel
+   corridor. Parallel segments on the same axis must be >= 30px apart. See
+   Section 9 of `references/best-practices.md` for the full audit checklist.
+
+3. **Minimum 30px Last-Segment Length** - The final segment of an L-shaped or
+   elbow arrow (the segment entering the target) must be >= 30px long. Short
+   final segments make arrowheads overlap the previous segment, creating an
+   ambiguous integral-sign shape. Fix by adding a waypoint that pushes the
+   bend further back.
+   ```
+   BAD (10px final):    ---+    GOOD (40px final):   --+
+                            |                            |
+                            v                            |
+                                                         v
+   ```
+
+4. **Arrow Lines Invisible Under Text Boxes** - Edge labels using
+   `labelBackgroundColor` must match the canvas background (`#FFFFFF`) or the
+   containing stage fill color. For edges passing behind standalone text/label
+   cells, ensure the text cell has `fillColor=#FFFFFF` (not `fillColor=none`)
+   so the arrow line is hidden underneath.
+   ```
+   GOOD: style="text;html=1;fillColor=#FFFFFF;strokeColor=none;"
+   BAD:  style="text;html=1;fillColor=none;strokeColor=none;"
+   ```
+
+5. **Dashed Box Titles Center-Aligned** - DATAFLOW stage border labels and any
+   title text inside dashed containers must use `align=center;` in their style.
+   The DATAFLOW Stage Border style already includes `align=center;`, but
+   standalone title text cells placed inside stage borders must also include it.
+
 ### Standalone Text (Label)
 
 ```xml
@@ -157,10 +202,16 @@ Style strings are semicolon-separated key=value pairs. Always include `html=1;` 
 ```
 (0,0)-----(0.5,0)-----(1,0)
   |                      |
-(0,0.5)              (1,0.5)
+(0,0.5)              (1,0.5)     <-- USE THESE (midpoints only)
   |                      |
 (0,1)-----(0.5,1)-----(1,1)
 ```
+
+**WARNING - CORNERS FORBIDDEN for edges**: Only connect edges to midpoints:
+`(0,0.5)`, `(0.5,0)`, `(1,0.5)`, `(0.5,1)`. Corner values `(0,0)`, `(0,1)`,
+`(1,0)`, `(1,1)` create diagonal stub segments in orthogonal routing that look
+broken. Corners are acceptable for shapes (e.g., container nesting) but never
+for edge connection points.
 
 For ellipses, same normalized coordinates apply to the ellipse bounding box.
 
@@ -402,8 +453,8 @@ When generating a draw.io diagram:
 3. **Place I/O ports first** - Ellipses at left/right edges
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
-6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo)
-7. **Audit edge overlaps** - Check all waypoint x/y values. Parallel segments within 30px must be offset. Fan-in/fan-out edges to same target/source need distinct corridors (>= 30px apart)
+6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). Use midpoint connections only (see Edge Quality Rules). Ensure last segment >= 30px
+7. **Audit edge quality** - Run all 5 Edge Quality Rules: (1) no corner connections, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned
 8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
 9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
 10. **Add legend** - Bottom-right box with arrow/block color key
