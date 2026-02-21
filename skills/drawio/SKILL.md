@@ -181,7 +181,7 @@ Rule 6 is a post-generation optimization pass for layout quality.
    standalone title text cells placed inside stage borders must also include it.
 
 6. **Layout Improvement Pass** - After initial placement and edge routing,
-   run this 5-step audit to optimize layout quality:
+   run this 7-step audit to optimize layout quality:
    1. **Edge-shape crossthrough**: Trace each edge path segment by segment.
       If any segment crosses through a shape it does not connect to, reroute
       via an alternative face or add waypoints to go around the obstacle.
@@ -198,6 +198,16 @@ Rule 6 is a post-generation optimization pass for layout quality.
    5. **Container tightening**: Set container height to
       `max_child_bottom_y - container_y + 30px`. Adjust legend position
       to match the tightened layout.
+   6. **Center alignment for vertical connections**: When shapes are
+      connected by top-to-bottom arrows (exitX=0.5, entryX=0.5), all
+      connected shapes must share the same center-x. Compute each
+      shape's x as `center_x - width / 2`. Different widths with the
+      same left-x creates angled "vertical" arrows.
+   7. **Label-edge clearance**: Verify that FIFO label boxes and
+      annotation labels do not overlap edge routing paths. Labels must
+      have >= 15px clearance from the nearest edge segment. If an edge
+      at y=445 runs through a label at y=432-462, reposition the label
+      above (y < 430) or below (y > 460) the edge.
 
    See `references/best-practices.md` Section 4 and Section 9 for detailed
    techniques with before/after XML examples.
@@ -412,6 +422,10 @@ Shows internal DATAFLOW stages (EXTRACT/COMPUTE/APPLY or TMCS 4-stage).
 - Control I/O ports if FSM+DATAFLOW
 - Bypass/passthrough streams (below main flow)
 - Stage labels: "EXTRACT", "COMPUTE", "APPLY" (or TMCS stages)
+- **FIFO label z-order**: FIFO boxes between stages must be placed AFTER all
+  edges in the XML (Layer 4). See Z-Order section.
+- **Vertical alignment**: Components connected by top-to-bottom arrows within
+  a stage must share the same center-x coordinate
 
 ### 3. FSM State Diagram (Phase 5)
 
@@ -515,15 +529,30 @@ When generating a draw.io diagram:
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
 6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). Use midpoint connections only (see Edge Quality Rules). Ensure last segment >= 30px
-7. **Audit edge quality** - Run all 6 Edge Quality Rules: (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening)
+7. **Audit edge quality** - Run all 6 Edge Quality Rules: (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening, center alignment, label-edge clearance). Verify z-order: annotation labels AFTER edges in XML
 8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
 9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
 10. **Add legend** - Bottom-right box with arrow/block color key
 11. **Generate .arch.json** - Companion file with graph structure
 
-### Z-Order
+### Z-Order (4-Layer Model)
 
-Elements are rendered in document order. Place background elements (stage borders) BEFORE foreground elements (blocks, arrows) in the XML.
+Elements render in document order (earlier = behind, later = on top). Use this
+4-layer ordering to prevent edges from covering labels or labels from hiding
+behind stage borders:
+
+```
+Layer 1 (back):  Stage borders, container rectangles (dashed backgrounds)
+Layer 2:         Component shapes (blocks, ellipses, storage elements)
+Layer 3:         Edges (all arrows and connections)
+Layer 4 (front): Annotation labels (FIFO boxes, standalone labels that overlay edges)
+                 Legend box, resource summary box
+```
+
+**Critical**: FIFO label boxes and inter-stage annotation boxes must be defined
+AFTER all edges in the XML. If placed before edges, the edges render on top and
+visually cover the labels. This is the most common cause of "partially covered
+FIFO boxes" in DATAFLOW diagrams.
 
 ### ID Convention
 
