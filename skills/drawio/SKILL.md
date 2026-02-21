@@ -99,18 +99,54 @@ For non-straight routing (L-shaped, around obstacles):
 vertical segments, same y for horizontal), offset by >= 30px to prevent visual
 merging. See `references/best-practices.md` Section 9 for full audit checklist.
 
+### Detached Edge (sourcePoint/targetPoint)
+
+When two shapes have intervening shapes between them and auto-routing cannot
+find a clean path, use a detached edge with explicit coordinates instead of
+`source`/`target` attributes:
+
+```xml
+<mxCell id="edge-nco-rotation" value="sin/cos"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;
+               strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
+               fontSize=9;labelBackgroundColor=#FFFFFF;"
+        edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="1240" y="175"/>
+      <mxPoint x="1240" y="430"/>
+    </Array>
+    <mxPoint x="1160" y="175" as="sourcePoint"/>
+    <mxPoint x="1180" y="430" as="targetPoint"/>
+  </mxGeometry>
+</mxCell>
+```
+
+- No `source`/`target` attributes - edge is not bound to any shape
+- `sourcePoint` and `targetPoint` are absolute (x,y) coordinates
+- Waypoints provide full path control between the endpoints
+- Use when shapes are stacked vertically with intervening shapes, or when
+  auto-routing consistently produces paths that cross through other shapes
+- Trade-off: endpoints do not auto-update when shapes are moved
+
 ### Edge Quality Rules (BLOCKING)
 
-These 5 rules prevent the most common visual defects in generated diagrams.
-Violation of any rule produces a diagram that looks broken when rendered.
+These 6 rules prevent the most common visual defects in generated diagrams.
+Violation of rules 1-5 produces a diagram that looks broken when rendered.
+Rule 6 is a post-generation optimization pass for layout quality.
 
-1. **No Corner Connections** - Edge endpoints (`exitX/exitY`, `entryX/entryY`)
-   must use midpoint values only: `(0,0.5)`, `(0.5,0)`, `(1,0.5)`, `(0.5,1)`.
-   Never use corners `(0,0)`, `(0,1)`, `(1,0)`, `(1,1)` - orthogonal routing
-   creates a diagonal stub from the corner that looks broken.
+1. **Face Points Only (Corners Forbidden)** - Edge endpoints (`exitX/exitY`,
+   `entryX/entryY`) must be ON a face: one coordinate at 0 or 1, the other
+   anywhere in [0,1]. Default to midpoints (0.5). When 2+ edges share the
+   same face, distribute positions (0.25, 0.5, 0.75) instead of stacking at
+   0.5. Never use corners where BOTH coordinates are 0 or 1 - orthogonal
+   routing creates a diagonal stub from the corner that looks broken.
    ```
-   GOOD: exitX=1;exitY=0.5;    (right center)
-   BAD:  exitX=1;exitY=1;      (bottom-right corner - creates diagonal)
+   GOOD: exitX=1;exitY=0.5;    (right midpoint - default)
+   GOOD: exitX=0;exitY=0.75;   (left face, 75% down - distributed)
+   GOOD: entryX=0.5;entryY=1;  (bottom midpoint)
+   BAD:  exitX=1;exitY=1;      (corner - creates diagonal stub)
+   BAD:  entryX=0;entryY=0;    (corner - creates diagonal stub)
    ```
 
 2. **No Arrow Overlap** - No two edge line segments may share the same pixel
@@ -143,6 +179,28 @@ Violation of any rule produces a diagram that looks broken when rendered.
    title text inside dashed containers must use `align=center;` in their style.
    The DATAFLOW Stage Border style already includes `align=center;`, but
    standalone title text cells placed inside stage borders must also include it.
+
+6. **Layout Improvement Pass** - After initial placement and edge routing,
+   run this 5-step audit to optimize layout quality:
+   1. **Edge-shape crossthrough**: Trace each edge path segment by segment.
+      If any segment crosses through a shape it does not connect to, reroute
+      via an alternative face or add waypoints to go around the obstacle.
+   2. **Connection point distribution**: Find shapes with 2+ edges on the
+      same face. Distribute entry/exit points across faces. If forced to
+      share a face, use positions (0.25, 0.5, 0.75) instead of all at 0.5.
+   3. **Route determinism**: In crowded areas where auto-routing produces
+      ambiguous paths, add explicit waypoints so every segment is
+      deterministic. The auto-router should only handle the first/last
+      few pixels from exit/entry points to the nearest waypoint.
+   4. **Cross-stage simplification**: For edges crossing multiple stages,
+      prefer routing OUTSIDE stage content areas (above or below all
+      blocks). This produces simpler routes with fewer waypoints.
+   5. **Container tightening**: Set container height to
+      `max_child_bottom_y - container_y + 30px`. Adjust legend position
+      to match the tightened layout.
+
+   See `references/best-practices.md` Section 4 and Section 9 for detailed
+   techniques with before/after XML examples.
 
 ### Standalone Text (Label)
 
@@ -200,18 +258,21 @@ Style strings are semicolon-separated key=value pairs. Always include `html=1;` 
 ### Connection Points (exitX/exitY and entryX/entryY)
 
 ```
-(0,0)-----(0.5,0)-----(1,0)
+(0,0)-----(0.5,0)-----(1,0)       CORNERS (both 0 or 1): FORBIDDEN
   |                      |
-(0,0.5)              (1,0.5)     <-- USE THESE (midpoints only)
+(0,0.5)              (1,0.5)       FACE MIDPOINTS: default choice
   |                      |
-(0,1)-----(0.5,1)-----(1,1)
+(0,0.75)             (1,0.25)      FACE POINTS: use to distribute
+  |                      |
+(0,1)-----(0.5,1)-----(1,1)       CORNERS (both 0 or 1): FORBIDDEN
 ```
 
-**WARNING - CORNERS FORBIDDEN for edges**: Only connect edges to midpoints:
-`(0,0.5)`, `(0.5,0)`, `(1,0.5)`, `(0.5,1)`. Corner values `(0,0)`, `(0,1)`,
-`(1,0)`, `(1,1)` create diagonal stub segments in orthogonal routing that look
-broken. Corners are acceptable for shapes (e.g., container nesting) but never
-for edge connection points.
+**CORNERS FORBIDDEN for edges**: A connection point is valid when exactly one
+coordinate is 0 or 1 (placing it on a face). Both coordinates at 0 or 1 is a
+corner - orthogonal routing creates a diagonal stub that looks broken. Default
+to midpoints (0.5). When 2+ edges share the same face, distribute them using
+fractional positions (0.25, 0.75) to prevent overlap. Corners are acceptable
+for shapes (e.g., container nesting) but never for edge connection points.
 
 For ellipses, same normalized coordinates apply to the ellipse bounding box.
 
@@ -454,7 +515,7 @@ When generating a draw.io diagram:
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
 6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). Use midpoint connections only (see Edge Quality Rules). Ensure last segment >= 30px
-7. **Audit edge quality** - Run all 5 Edge Quality Rules: (1) no corner connections, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned
+7. **Audit edge quality** - Run all 6 Edge Quality Rules: (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening)
 8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
 9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
 10. **Add legend** - Bottom-right box with arrow/block color key

@@ -197,23 +197,35 @@ Use `Courier New` for:
 
 ### Edge Quality Rules
 
-Five rules that prevent the most common visual defects in generated diagrams.
-For the concise checklist, see the main SKILL.md. This section provides
-detailed explanations and XML examples.
+Six rules that prevent the most common visual defects in generated diagrams.
+Rules 1-5 are correctness rules (violations look broken). Rule 6 is a layout
+optimization pass. For the concise checklist, see the main SKILL.md. This
+section provides detailed explanations and XML examples.
 
-#### Rule 1: No Corner Connections
+#### Rule 1: Face Points Only (Corners Forbidden)
 
-Edge endpoints (`exitX/exitY`, `entryX/entryY`) must connect to midpoints
-only. Corner values create a diagonal stub segment in orthogonal routing
-because the router draws a straight line from the corner to the first
-orthogonal waypoint, producing a 45-degree segment that looks broken.
+Edge endpoints (`exitX/exitY`, `entryX/entryY`) must be ON a face: exactly
+one coordinate at 0 or 1, the other anywhere in [0,1]. Default to midpoints
+(0.5). When 2+ edges share the same face, distribute using fractional
+positions (0.25, 0.5, 0.75). Corner values (both coordinates at 0 or 1)
+create a diagonal stub in orthogonal routing because the router draws a
+straight line from the corner to the first orthogonal waypoint, producing a
+45-degree segment that looks broken.
 
 ```xml
-<!-- GOOD: exits right-center, enters left-center -->
+<!-- GOOD: exits right midpoint (default) -->
 <mxCell style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;
                entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1971c2;strokeWidth=2;
                endArrow=classic;html=1;"
         edge="1" source="m1" target="m2" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- GOOD: exits left face at 75% down (distributed to avoid overlap) -->
+<mxCell style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.75;exitDx=0;exitDy=0;
+               entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#e03131;strokeWidth=1;
+               dashed=1;endArrow=classic;html=1;"
+        edge="1" source="fsm" target="offset-fifo" parent="1">
   <mxGeometry relative="1" as="geometry"/>
 </mxCell>
 
@@ -226,11 +238,15 @@ orthogonal waypoint, producing a 45-degree segment that looks broken.
 </mxCell>
 ```
 
-Allowed midpoint values:
-- `(0, 0.5)` - left center
-- `(0.5, 0)` - top center
-- `(1, 0.5)` - right center
-- `(0.5, 1)` - bottom center
+Valid connection points (one coordinate at 0 or 1):
+- `(0, 0.5)` - left center (default)
+- `(0.5, 0)` - top center (default)
+- `(1, 0.5)` - right center (default)
+- `(0.5, 1)` - bottom center (default)
+- `(0, 0.25)`, `(0, 0.75)` - left face, distributed
+- `(0.25, 0)`, `(0.75, 0)` - top face, distributed
+- `(1, 0.25)`, `(1, 0.75)` - right face, distributed
+- `(0.25, 1)`, `(0.75, 1)` - bottom face, distributed
 
 #### Rule 2: No Arrow Overlap
 
@@ -321,6 +337,199 @@ titles.
   <mxGeometry x="10" y="5" width="280" height="25" as="geometry"/>
 </mxCell>
 ```
+
+#### Rule 6: Layout Improvement Pass
+
+A post-generation audit that optimizes layout quality. Run after initial
+placement and edge routing. Six techniques, applied in order:
+
+##### T1: Connection Point Distribution
+
+**Problem**: Multiple edges auto-route to the same face midpoint, overlapping.
+
+**Rule**: When 2+ edges connect to the same shape, distribute them across
+different faces. When forced to share a face, use distributed positions
+(0.25, 0.5, 0.75) not all at 0.5.
+
+```xml
+<!-- BAD: data_in and fineOffset_in both enter FSM at left midpoint -->
+<mxCell id="edge-in-fsm" source="io-data-in" target="extract-fsm"
+        style="edgeStyle=orthogonalEdgeStyle;entryX=0;entryY=0.5;..." edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="edge-ctrl-fsm" source="io-fineOffset-in" target="extract-fsm"
+        style="edgeStyle=orthogonalEdgeStyle;entryX=0;entryY=0.5;..." edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- GOOD: ctrl stays on left face (default), data enters from bottom -->
+<mxCell id="edge-in-fsm" source="io-data-in" target="extract-fsm"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=block;endFill=1;html=1;
+               entryX=0.129;entryY=1.008;entryDx=0;entryDy=0;entryPerimeter=0;"
+        edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="180" y="320"/>
+      <mxPoint x="180" y="300"/>
+      <mxPoint x="218" y="300"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+<mxCell id="edge-ctrl-fsm" source="io-fineOffset-in" target="extract-fsm"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;..." edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+```
+
+##### T2: Route-Around via Alternative Face
+
+**Problem**: Direct path from shape A to shape B crosses through shape C.
+
+**Rule**: Choose an alternative entry/exit face that allows an obstacle-free
+route, even if it means more waypoints.
+
+```
+BEFORE: circ_buf --right--> [crosses through FSM] --left--> lltf_stream
+AFTER:  circ_buf --right(midpoint)--> waypoints route below FSM --> lltf_stream(bottom)
+```
+
+```xml
+<!-- GOOD: exit right midpoint, route around obstacle, enter FIFO from bottom -->
+<mxCell id="edge-circ-lltf" source="extract-circbuf" target="fifo-lltf"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=block;endFill=1;html=1;
+               exitX=1;exitY=0.5;exitDx=0;exitDy=0;
+               entryX=0.5;entryY=1;entryDx=0;entryDy=0;"
+        edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="370" y="350"/>
+      <mxPoint x="370" y="300"/>
+      <mxPoint x="420" y="300"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+```
+
+##### T3: Explicit Waypoints for Route Determinism
+
+**Problem**: Auto-routing with 0-1 waypoints produces ambiguous L-shapes in
+crowded areas. Different renderers may choose different paths.
+
+**Rule**: Add enough waypoints to make every segment explicit. The auto-router
+should only handle the first/last few pixels from exit/entry points to the
+nearest waypoint.
+
+```xml
+<!-- BAD: 1 waypoint, auto-router decides the remaining path -->
+<mxCell id="edge-circ-pass" source="extract-circbuf" target="fifo-passthrough"
+        style="edgeStyle=orthogonalEdgeStyle;..." edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="270" y="430"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+
+<!-- GOOD: 3 waypoints, every segment is fully specified -->
+<mxCell id="edge-circ-pass" source="extract-circbuf" target="fifo-passthrough"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=block;endFill=1;html=1;
+               exitX=0.5;exitY=1;exitDx=0;exitDy=0;
+               entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+        edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="270" y="430"/>
+      <mxPoint x="330" y="430"/>
+      <mxPoint x="330" y="455"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+```
+
+##### T4: Detached Edges for Internal Routing
+
+**Problem**: Two shapes are vertically stacked with intervening shapes, and
+connected routing (source/target) cannot find a clean path.
+
+**Rule**: Use detached edges with explicit `sourcePoint`/`targetPoint`
+coordinates instead of `source`/`target` attributes. This gives full manual
+control over the path.
+
+```xml
+<!-- GOOD: NCO -> rotation with phase_acc between them -->
+<mxCell id="edge-nco-rotation" value="sin/cos"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;
+               strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
+               fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;"
+        edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="1240" y="175"/>
+      <mxPoint x="1240" y="430"/>
+    </Array>
+    <mxPoint x="1160" y="175" as="sourcePoint"/>
+    <mxPoint x="1180" y="430" as="targetPoint"/>
+  </mxGeometry>
+</mxCell>
+```
+
+**Trade-off**: Detached edges do not auto-update when shapes are moved. Use
+only when connected routing consistently fails.
+
+##### T5: Route Simplification (Outside-Route Pattern)
+
+**Problem**: Cross-stage edges use multi-waypoint Z-shapes routing through
+stage content areas, crossing internal shapes.
+
+**Rule**: For edges crossing multiple stages, route OUTSIDE stage content
+areas (above or below all blocks). This avoids crossing through internal
+shapes and produces simpler routes with fewer waypoints.
+
+```
+BEFORE (3 waypoints, routes through stages):
+  cordic --> [670,380] --> [940,380] --> [940,280] --> freq_out
+
+AFTER (2 waypoints, routes below all stage content):
+  cordic --> [670,350] --> [1410,350] --> freq_out
+```
+
+```xml
+<!-- GOOD: route below all stage content, past APPLY stage boundary -->
+<mxCell id="edge-cordic-freqout" value="fineCfoFreq"
+        style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;
+               strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
+               fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;"
+        source="compute-cordic" target="io-freq-out" edge="1" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="670" y="350"/>
+      <mxPoint x="1410" y="350"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+```
+
+##### T6: Container Tightening
+
+**Problem**: Stage borders have excess whitespace below content, wasting
+vertical space and pushing the legend too far down.
+
+**Rule**: After placing all content, set container height to
+`max_child_bottom_y - container_y + 30px` (padding). Adjust legend and
+resource box positions to match.
+
+```
+BEFORE: EXTRACT border height=620, APPLY border height=620
+        Legend at y=770
+
+AFTER:  EXTRACT border height=570, APPLY border height=570  (-50px)
+        Legend at y=680                                       (-90px)
+```
+
+Formula: `container_height = (max_y_of_children + child_height) - container_y + 30`
 
 ### Bit-Width Annotations
 
@@ -497,9 +706,14 @@ Every Draw.io XML must start with these two root cells:
 | Missing `as="geometry"` | Geometry not applied | `<mxGeometry ... as="geometry"/>` is required |
 | Container without `container=1` | Child cells not grouped | Add `container=1;` to parent style |
 | Text outside visible canvas | Content clipped or invisible | Keep all elements within positive x,y coordinates |
-| Corner exit/entry on edges | Diagonal stub in orthogonal routing | Use midpoints only: (0,0.5), (0.5,0), (1,0.5), (0.5,1) |
+| Corner exit/entry on edges | Diagonal stub in orthogonal routing | Use face points (one coord at 0/1). Distribute (0.25, 0.75) when sharing |
 | Short last segment (< 30px) | Arrowhead overlaps previous segment | Add waypoint to push bend >= 30px from target entry |
 | Text label with `fillColor=none` over edge path | Arrow line bleeds through label | Set `fillColor=#FFFFFF` on text cell |
+| Multiple edges at same face midpoint | Overlapping edges at connection point | Distribute across faces; use 0.25/0.75 when sharing (T1) |
+| Edge crosses through unrelated shape | Arrow visually pierces a block | Reroute via alternative face (T2) or use detached edge (T4) |
+| Auto-routing in crowded area | Different renderers choose different paths | Add explicit waypoints for every segment (T3) |
+| Cross-stage edge through content | Arrow weaves through internal blocks | Route outside stage content areas (T5) |
+| Container with 50px+ excess whitespace | Wasted vertical space, legend too far | Tighten to content + 30px padding (T6) |
 
 ### Style String Hygiene
 
@@ -648,7 +862,9 @@ a distinct corridor with >= 30px separation between parallel segments.
 
 ### Post-Placement Audit Checklist
 
-After placing all edges, run this mental audit:
+After placing all edges, run this audit in two phases:
+
+**Phase A: Correctness (Rules 1-5)**
 
 1. **Vertical corridors**: List all waypoint x-coordinates. Flag any duplicates
    where the corresponding y-ranges overlap or are within 30px.
@@ -658,12 +874,26 @@ After placing all edges, run this mental audit:
    entry/exit corridors with >= 30px between parallel segments.
 4. **Near-miss check**: Edges within 15px of each other visually merge at
    normal zoom levels. Treat anything < 30px as an overlap.
-5. **Corner connections**: Verify no edge uses exitX/exitY or entryX/entryY
-   values of (0,0), (0,1), (1,0), or (1,1). Only midpoints are allowed.
+5. **Corner connections**: Verify no edge has BOTH exitX/exitY (or
+   entryX/entryY) at 0 or 1. Face points (one coordinate at 0/1) are valid.
 6. **Last-segment length**: For each L-shaped or elbow edge, measure the
    distance from the last bend to the target entry point. Must be >= 30px.
 7. **Label backgrounds**: Check all standalone text cells that overlap with
    edge paths. Each must have `fillColor=#FFFFFF` (not `fillColor=none`).
+
+**Phase B: Layout Optimization (Rule 6)**
+
+8. **Edge-shape crossthrough**: Trace each edge path. If any segment passes
+   through a shape it does not connect to, reroute via T2 (alternative face)
+   or T4 (detached edge).
+9. **Connection point distribution**: Find shapes with 2+ edges on the same
+   face. Apply T1 - distribute across faces or use fractional positions.
+10. **Route determinism**: In crowded areas, verify each edge has enough
+    waypoints for a fully deterministic path (T3).
+11. **Cross-stage simplification**: Check edges spanning 2+ stages. Apply T5
+    - route outside stage content areas where possible.
+12. **Container tightening**: Verify container heights match content with
+    30px padding (T6). Move legend/resource boxes if containers were shrunk.
 
 ---
 
