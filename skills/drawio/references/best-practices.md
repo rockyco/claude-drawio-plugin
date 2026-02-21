@@ -195,6 +195,133 @@ Use `Courier New` for:
 </mxCell>
 ```
 
+### Edge Quality Rules
+
+Five rules that prevent the most common visual defects in generated diagrams.
+For the concise checklist, see the main SKILL.md. This section provides
+detailed explanations and XML examples.
+
+#### Rule 1: No Corner Connections
+
+Edge endpoints (`exitX/exitY`, `entryX/entryY`) must connect to midpoints
+only. Corner values create a diagonal stub segment in orthogonal routing
+because the router draws a straight line from the corner to the first
+orthogonal waypoint, producing a 45-degree segment that looks broken.
+
+```xml
+<!-- GOOD: exits right-center, enters left-center -->
+<mxCell style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;
+               entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=classic;html=1;"
+        edge="1" source="m1" target="m2" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- BAD: exits bottom-right corner - creates diagonal stub -->
+<mxCell style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=1;exitDx=0;exitDy=0;
+               entryX=0;entryY=1;entryDx=0;entryDy=0;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=classic;html=1;"
+        edge="1" source="m1" target="m2" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+```
+
+Allowed midpoint values:
+- `(0, 0.5)` - left center
+- `(0.5, 0)` - top center
+- `(1, 0.5)` - right center
+- `(0.5, 1)` - bottom center
+
+#### Rule 2: No Arrow Overlap
+
+See Section 9 for the full 30px minimum clearance rule and audit checklist.
+
+#### Rule 3: Minimum 30px Last-Segment Length
+
+The final segment of an L-shaped or elbow arrow (the segment entering the
+target shape) must be >= 30px long. When this segment is too short (< 30px),
+the arrowhead visually overlaps the perpendicular segment before the bend,
+creating an ambiguous integral-sign or T-junction appearance.
+
+```
+Problem (final segment ~10px):     Fixed (final segment 40px):
+
+    source                             source
+       |                                  |
+       +---->target                       +-------+
+                                                  |
+                                                  v
+                                               target
+```
+
+**Fix**: Add a waypoint that pushes the bend further back from the target.
+The waypoint should be at least 30px from the target's entry edge.
+
+```xml
+<!-- GOOD: waypoint at x=250, target entry at x=300. Last segment = 50px -->
+<mxCell style="edgeStyle=orthogonalEdgeStyle;entryX=0;entryY=0.5;entryDx=0;entryDy=0;
+               strokeColor=#1971c2;strokeWidth=2;endArrow=classic;html=1;"
+        edge="1" source="src" target="dst" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="250" y="200"/>
+      <mxPoint x="250" y="350"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+```
+
+#### Rule 4: Arrow Lines Invisible Under Text Boxes
+
+When an edge passes behind a standalone text cell (label, annotation, title),
+the text cell must have an opaque background (`fillColor=#FFFFFF`) so the
+arrow line is hidden underneath. Text cells with `fillColor=none` are
+transparent and let arrow lines bleed through, creating visual clutter.
+
+```xml
+<!-- GOOD: opaque white background hides arrow line underneath -->
+<mxCell id="label-phase" value="Phase 1: Input"
+        style="text;html=1;fontSize=14;fontStyle=1;fillColor=#FFFFFF;strokeColor=none;"
+        vertex="1" parent="1">
+  <mxGeometry x="100" y="50" width="120" height="30" as="geometry"/>
+</mxCell>
+
+<!-- BAD: transparent background lets arrows bleed through -->
+<mxCell id="label-phase" value="Phase 1: Input"
+        style="text;html=1;fontSize=14;fontStyle=1;fillColor=none;strokeColor=none;"
+        vertex="1" parent="1">
+  <mxGeometry x="100" y="50" width="120" height="30" as="geometry"/>
+</mxCell>
+```
+
+For edge labels (`value` on an edge cell), set `labelBackgroundColor=#FFFFFF`
+(or the containing stage fill color) in the edge style to prevent the label
+text from overlapping the edge line itself.
+
+#### Rule 5: Dashed Box Titles Center-Aligned
+
+DATAFLOW stage border labels and any title text inside dashed containers must
+use `align=center;` in their style. The DATAFLOW Stage Border style already
+includes `align=center;`, but standalone title text cells placed inside stage
+borders are often generated with `align=left;` by default, causing off-center
+titles.
+
+```xml
+<!-- GOOD: center-aligned title inside a dashed stage border -->
+<mxCell value="EXTRACT Stage"
+        style="text;html=1;fontSize=13;fontStyle=1;fontColor=#475569;align=center;"
+        vertex="1" parent="stage-extract">
+  <mxGeometry x="0" y="5" width="280" height="25" as="geometry"/>
+</mxCell>
+
+<!-- BAD: left-aligned title looks off-center in a centered container -->
+<mxCell value="EXTRACT Stage"
+        style="text;html=1;fontSize=13;fontStyle=1;fontColor=#475569;align=left;"
+        vertex="1" parent="stage-extract">
+  <mxGeometry x="10" y="5" width="280" height="25" as="geometry"/>
+</mxCell>
+```
+
 ### Bit-Width Annotations
 
 Place bit-width labels on edges using `mxCell` with `style="text;..."`:
@@ -370,6 +497,9 @@ Every Draw.io XML must start with these two root cells:
 | Missing `as="geometry"` | Geometry not applied | `<mxGeometry ... as="geometry"/>` is required |
 | Container without `container=1` | Child cells not grouped | Add `container=1;` to parent style |
 | Text outside visible canvas | Content clipped or invisible | Keep all elements within positive x,y coordinates |
+| Corner exit/entry on edges | Diagonal stub in orthogonal routing | Use midpoints only: (0,0.5), (0.5,0), (1,0.5), (0.5,1) |
+| Short last segment (< 30px) | Arrowhead overlaps previous segment | Add waypoint to push bend >= 30px from target entry |
+| Text label with `fillColor=none` over edge path | Arrow line bleeds through label | Set `fillColor=#FFFFFF` on text cell |
 
 ### Style String Hygiene
 
@@ -528,6 +658,12 @@ After placing all edges, run this mental audit:
    entry/exit corridors with >= 30px between parallel segments.
 4. **Near-miss check**: Edges within 15px of each other visually merge at
    normal zoom levels. Treat anything < 30px as an overlap.
+5. **Corner connections**: Verify no edge uses exitX/exitY or entryX/entryY
+   values of (0,0), (0,1), (1,0), or (1,1). Only midpoints are allowed.
+6. **Last-segment length**: For each L-shaped or elbow edge, measure the
+   distance from the last bend to the target entry point. Must be >= 30px.
+7. **Label backgrounds**: Check all standalone text cells that overlap with
+   edge paths. Each must have `fillColor=#FFFFFF` (not `fillColor=none`).
 
 ---
 
