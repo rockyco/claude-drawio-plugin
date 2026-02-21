@@ -531,17 +531,22 @@ AFTER:  EXTRACT border height=570, APPLY border height=570  (-50px)
 
 Formula: `container_height = (max_y_of_children + child_height) - container_y + 30`
 
-##### T7: Center Alignment for Vertical Connections
+##### T7: Center Alignment for Straight Connections
 
-**Problem**: Shapes connected by top-to-bottom arrows have different widths
-but the same left-x, causing "vertical" arrows to angle.
+**Problem**: Shapes connected by arrows that should be straight have different
+dimensions but the same top/left coordinate, causing the arrows to angle.
 
-**Rule**: When shapes are connected by vertical arrows (exitX=0.5 to
-entryX=0.5), all connected shapes must share the same center-x. Compute
-each shape's x-position from its width: `shape.x = center_x - width / 2`.
+**Rule**: When shapes are connected by arrows that should be straight lines,
+align their centers on the shared axis:
+- **Vertical arrows** (exitX=0.5, entryX=0.5): all connected shapes must
+  share the same center-x. `shape.x = center_x - width / 2`
+- **Horizontal arrows** (exitY=0.5, entryY=0.5): all connected shapes must
+  share the same center-y. `shape.y = center_y - height / 2`
+
+**Vertical example** (APPLY stage: NCO -> Phase Acc -> Complex MUL):
 
 ```
-BEFORE (left-aligned, angled arrows):
+BEFORE (left-aligned, angled vertical arrows):
 
   x=910  [NCO LUT    w=130]     center=975
            |  (angled)
@@ -549,7 +554,7 @@ BEFORE (left-aligned, angled arrows):
            |  (angled)
   x=910  [Complex MUL w=145]    center=982.5
 
-AFTER (center-aligned, straight arrows):
+AFTER (center-aligned, straight vertical arrows):
 
   x=910  [NCO LUT    w=130]     center=975
            |  (straight)
@@ -559,18 +564,54 @@ AFTER (center-aligned, straight arrows):
 ```
 
 ```xml
-<!-- Center-aligned at center_x=975 -->
+<!-- Vertical: center-aligned at center_x=975 -->
 <mxCell id="apply-nco" style="...">
   <mxGeometry x="910" y="130" width="130" height="65" as="geometry"/>
-  <!-- center = 910 + 65 = 975 -->
+  <!-- center_x = 910 + 65 = 975 -->
 </mxCell>
 <mxCell id="apply-phase-acc" style="...">
   <mxGeometry x="915" y="225" width="120" height="50" as="geometry"/>
-  <!-- center = 915 + 60 = 975 -->
+  <!-- center_x = 915 + 60 = 975 -->
 </mxCell>
 <mxCell id="apply-cmul" style="...">
   <mxGeometry x="903" y="330" width="145" height="65" as="geometry"/>
-  <!-- center = 903 + 72.5 = 975.5 (sub-pixel, visually identical) -->
+  <!-- center_x = 903 + 72.5 = 975.5 (sub-pixel, visually identical) -->
+</mxCell>
+```
+
+**Horizontal example** (data flow: Input -> Module -> Output):
+
+```
+BEFORE (top-aligned, angled horizontal arrows):
+
+  y=100  [Input Port  h=55]     center_y=127.5
+              --> (angled)
+  y=100  [Module      h=80]     center_y=140
+              --> (angled)
+  y=100  [Output Port h=65]     center_y=132.5
+
+AFTER (center-aligned, straight horizontal arrows):
+
+  y=113  [Input Port  h=55]     center_y=140
+              --> (straight)
+  y=100  [Module      h=80]     center_y=140
+              --> (straight)
+  y=108  [Output Port h=65]     center_y=140
+```
+
+```xml
+<!-- Horizontal: center-aligned at center_y=140 -->
+<mxCell id="io-data-in" style="ellipse;...">
+  <mxGeometry x="20" y="113" width="100" height="55" as="geometry"/>
+  <!-- center_y = 113 + 27.5 = 140.5 -->
+</mxCell>
+<mxCell id="compute-block" style="rounded=1;...">
+  <mxGeometry x="200" y="100" width="200" height="80" as="geometry"/>
+  <!-- center_y = 100 + 40 = 140 -->
+</mxCell>
+<mxCell id="io-data-out" style="ellipse;...">
+  <mxGeometry x="480" y="108" width="120" height="65" as="geometry"/>
+  <!-- center_y = 108 + 32.5 = 140.5 -->
 </mxCell>
 ```
 
@@ -814,7 +855,7 @@ Every Draw.io XML must start with these two root cells:
 | Auto-routing in crowded area | Different renderers choose different paths | Add explicit waypoints for every segment (T3) |
 | Cross-stage edge through content | Arrow weaves through internal blocks | Route outside stage content areas (T5) |
 | Container with 50px+ excess whitespace | Wasted vertical space, legend too far | Tighten to content + 30px padding (T6) |
-| Vertical shapes with same left-x but different widths | Angled "vertical" arrows between them | Center-align: `x = center - width/2` (T7) |
+| Shapes with same top/left but different dimensions | Angled arrows that should be straight | Center-align: `x = cx - w/2` or `y = cy - h/2` (T7) |
 | FIFO label boxes defined before edges in XML | Edges render on top, covering FIFO labels | Move FIFO labels to Layer 4 (after all edges) (T8) |
 | Annotation label overlapping edge route | Edge line crosses through label text | Reposition label with >= 15px clearance from edge (T8) |
 
@@ -997,9 +1038,9 @@ After placing all edges, run this audit in two phases:
     - route outside stage content areas where possible.
 12. **Container tightening**: Verify container heights match content with
     30px padding (T6). Move legend/resource boxes if containers were shrunk.
-13. **Vertical arrow alignment**: For shapes connected by top-to-bottom
-    arrows (exitX=0.5, entryX=0.5), verify all share the same center-x.
-    Formula: `shape.x = center_x - width / 2` (T7).
+13. **Straight arrow alignment**: For shapes connected by arrows that should
+    be straight: vertical (exitX=0.5, entryX=0.5) must share center-x,
+    horizontal (exitY=0.5, entryY=0.5) must share center-y (T7).
 14. **Label-edge clearance**: Verify no FIFO label or annotation box
     overlaps an edge path. Min 15px clearance. Confirm labels are placed
     AFTER edges in XML for correct z-order (T8).

@@ -198,11 +198,15 @@ Rule 6 is a post-generation optimization pass for layout quality.
    5. **Container tightening**: Set container height to
       `max_child_bottom_y - container_y + 30px`. Adjust legend position
       to match the tightened layout.
-   6. **Center alignment for vertical connections**: When shapes are
-      connected by top-to-bottom arrows (exitX=0.5, entryX=0.5), all
-      connected shapes must share the same center-x. Compute each
-      shape's x as `center_x - width / 2`. Different widths with the
-      same left-x creates angled "vertical" arrows.
+   6. **Center alignment for straight connections**: When shapes are
+      connected by arrows that should be straight lines, align their
+      centers on the shared axis:
+      - **Vertical arrows** (exitX=0.5, entryX=0.5): all connected
+        shapes must share the same center-x. `shape.x = center_x - width / 2`
+      - **Horizontal arrows** (exitY=0.5, entryY=0.5): all connected
+        shapes must share the same center-y. `shape.y = center_y - height / 2`
+      Different dimensions with the same top/left coordinate creates
+      angled arrows that should be straight.
    7. **Label-edge clearance**: Verify that FIFO label boxes and
       annotation labels do not overlap edge routing paths. Labels must
       have >= 15px clearance from the nearest edge segment. If an edge
