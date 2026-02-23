@@ -138,8 +138,11 @@ Rule 6 is a post-generation optimization pass for layout quality.
 1. **Face Points Only (Corners Forbidden)** - Edge endpoints (`exitX/exitY`,
    `entryX/entryY`) must be ON a face: one coordinate at 0 or 1, the other
    anywhere in [0,1]. Default to midpoints (0.5). When 2+ edges share the
-   same face, distribute positions (0.25, 0.5, 0.75) instead of stacking at
-   0.5. Never use corners where BOTH coordinates are 0 or 1 - orthogonal
+   same face - counting BOTH entering and exiting edges together -
+   distribute positions (0.25, 0.5, 0.75) instead of stacking at
+   0.5. This includes the mixed case where one edge enters and another
+   exits the same face at the same Y (or X) coordinate. Never use
+   corners where BOTH coordinates are 0 or 1 - orthogonal
    routing creates a diagonal stub from the corner that looks broken.
    ```
    GOOD: exitX=1;exitY=0.5;    (right midpoint - default)
@@ -147,6 +150,13 @@ Rule 6 is a post-generation optimization pass for layout quality.
    GOOD: entryX=0.5;entryY=1;  (bottom midpoint)
    BAD:  exitX=1;exitY=1;      (corner - creates diagonal stub)
    BAD:  entryX=0;entryY=0;    (corner - creates diagonal stub)
+   ```
+   **Mixed entry/exit overlap** - If edge A enters the right face at
+   `entryY=0.5` and edge B exits the right face at `exitY=0.5`, they
+   collide at the same point. Fix by distributing one to 0.25:
+   ```
+   BAD:  A entryX=1;entryY=0.5 + B exitX=1;exitY=0.5  (overlap at midpoint)
+   GOOD: A entryX=1;entryY=0.25 + B exitX=1;exitY=0.5 (separated)
    ```
 
 2. **No Arrow Overlap** - No two edge line segments may share the same pixel
@@ -186,7 +196,8 @@ Rule 6 is a post-generation optimization pass for layout quality.
       If any segment crosses through a shape it does not connect to, reroute
       via an alternative face or add waypoints to go around the obstacle.
    2. **Connection point distribution**: Find shapes with 2+ edges on the
-      same face. Distribute entry/exit points across faces. If forced to
+      same face, counting both entering and exiting edges together.
+      Distribute entry/exit points across faces. If forced to
       share a face, use positions (0.25, 0.5, 0.75) instead of all at 0.5.
    3. **Route determinism**: In crowded areas where auto-routing produces
       ambiguous paths, add explicit waypoints so every segment is
