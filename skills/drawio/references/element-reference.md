@@ -213,7 +213,11 @@ Control where edges attach using normalized 0-1 coordinates on the bounding box.
 </mxCell>
 ```
 
-Omit exit/entry properties for automatic perimeter-based connection.
+Exit/entry properties are MANDATORY on all edges with `source`/`target`
+bindings (Rule 0). Auto-routing (omitting exit/entry properties) is prohibited
+because different renderers choose different connection points, producing
+inconsistent diagrams. Only detached edges (`sourcePoint`/`targetPoint`) are
+exempt.
 
 ---
 

@@ -131,9 +131,24 @@ find a clean path, use a detached edge with explicit coordinates instead of
 
 ### Edge Quality Rules (BLOCKING)
 
-These 6 rules prevent the most common visual defects in generated diagrams.
-Violation of rules 1-5 produces a diagram that looks broken when rendered.
-Rule 6 is a post-generation optimization pass for layout quality.
+These 7 rules prevent the most common visual defects in generated diagrams.
+Rule 0 is the foundational requirement. Violation of rules 0-5 produces a
+diagram that looks broken when rendered. Rule 6 is a post-generation
+optimization pass for layout quality.
+
+0. **Explicit Connection Points (Mandatory)** - Every edge with `source` and
+   `target` attributes MUST specify ALL FOUR connection point properties in
+   its style: `exitX`, `exitY`, `entryX`, `entryY`, plus zero-offsets
+   `exitDx=0;exitDy=0;entryDx=0;entryDy=0;`. Omitting any property causes
+   auto-routing, which produces different paths on different renderers and
+   may cross shapes or overlap edges. Self-loops (source == target) also
+   require explicit exit/entry. Detached edges (using sourcePoint/targetPoint
+   instead of source/target) are exempt.
+   ```
+   GOOD: exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;
+   BAD:  exitX=1;exitY=0.5;  (missing exitDx/exitDy/entryX/entryY/entryDx/entryDy)
+   BAD:  (no exit/entry properties at all - fully auto-routed)
+   ```
 
 1. **Face Points Only (Corners Forbidden)** - Edge endpoints (`exitX/exitY`,
    `entryX/entryY`) must be ON a face: one coordinate at 0 or 1, the other
@@ -543,8 +558,8 @@ When generating a draw.io diagram:
 3. **Place I/O ports first** - Ellipses at left/right edges
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
-6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). Use midpoint connections only (see Edge Quality Rules). Ensure last segment >= 30px
-7. **Audit edge quality** - Run all 6 Edge Quality Rules: (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening, center alignment, label-edge clearance). Verify z-order: annotation labels AFTER edges in XML
+6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). EVERY edge MUST specify `exitX/exitY/exitDx=0/exitDy=0` AND `entryX/entryY/entryDx=0/entryDy=0` (Rule 0). Use face midpoints as default (Rule 1). Ensure last segment >= 30px
+7. **Audit edge quality** - Run all 7 Edge Quality Rules: (0) explicit connection points on every edge, (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening, center alignment, label-edge clearance). Verify z-order: annotation labels AFTER edges in XML
 8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
 9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
 10. **Add legend** - Bottom-right box with arrow/block color key
