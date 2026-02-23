@@ -382,6 +382,40 @@ different faces. When forced to share a face, use distributed positions
 </mxCell>
 ```
 
+**Mixed entry/exit overlap**: When one edge ENTERS a face and another EXITS
+the same face at the same position, they overlap at the connection point.
+Count both directions together when checking for shared-face conflicts.
+
+```xml
+<!-- BAD: sin/cos enters right face at entryY=0.5, data_out exits at exitY=0.5 -->
+<mxCell id="edge-nco-rotation" value="sin/cos"
+        style="...entryX=1;entryY=0.5;..."
+        edge="1" source="apply-nco" target="apply-rotation" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="edge-rotation-out"
+        style="...exitX=1;exitY=0.5;..."
+        edge="1" source="apply-rotation" target="io-data-out" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- GOOD: shift sin/cos entry to entryY=0.25, data_out stays at exitY=0.5 -->
+<mxCell id="edge-nco-rotation" value="sin/cos"
+        style="...exitX=1;exitY=0.25;...entryX=1;entryY=0.25;..."
+        edge="1" source="apply-nco" target="apply-rotation" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+<mxCell id="edge-rotation-out"
+        style="..."
+        edge="1" source="apply-rotation" target="io-data-out" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+```
+
+Evidence: M4 dataflow diagram - NCO sin/cos arrow and data_out arrow both
+connected to the right face of Complex Rotation at Y=0.5. The fix shifted
+sin/cos entry to Y=0.25, creating 17px visual separation.
+
 ##### T2: Route-Around via Alternative Face
 
 **Problem**: Direct path from shape A to shape B crosses through shape C.
@@ -1031,7 +1065,8 @@ After placing all edges, run this audit in two phases:
    through a shape it does not connect to, reroute via T2 (alternative face)
    or T4 (detached edge).
 9. **Connection point distribution**: Find shapes with 2+ edges on the same
-   face. Apply T1 - distribute across faces or use fractional positions.
+   face (counting both entering AND exiting edges together). Apply T1 -
+   distribute across faces or use fractional positions.
 10. **Route determinism**: In crowded areas, verify each edge has enough
     waypoints for a fully deterministic path (T3).
 11. **Cross-stage simplification**: Check edges spanning 2+ stages. Apply T5
