@@ -341,7 +341,64 @@ titles.
 #### Rule 6: Layout Improvement Pass
 
 A post-generation audit that optimizes layout quality. Run after initial
-placement and edge routing. Six techniques, applied in order:
+placement and edge routing. Nine techniques, applied in order:
+
+##### T0: Mandatory Explicit Connection Points
+
+**Problem**: Edges without explicit `exitX/exitY` and `entryX/entryY`
+properties rely on draw.io's auto-router, which selects connection points
+heuristically. Different renderers (desktop app, web editor, CLI export)
+may choose different connection points, producing inconsistent routing across
+environments.
+
+**Rule**: Every edge with `source` and `target` attributes MUST specify all
+four connection point properties (`exitX`, `exitY`, `entryX`, `entryY`) plus
+zero-offset properties (`exitDx=0;exitDy=0;entryDx=0;entryDy=0;`). Detached
+edges (using `sourcePoint`/`targetPoint`) are exempt.
+
+```xml
+<!-- BAD: no exit/entry properties - fully auto-routed, non-deterministic -->
+<mxCell id="edge-data" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;
+               strokeWidth=2;endArrow=classic;html=1;"
+        edge="1" source="input" target="compute" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- BAD: partial - has exitX/exitY but missing entryX/entryY -->
+<mxCell id="edge-data" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;
+               strokeWidth=2;endArrow=classic;html=1;
+               exitX=1;exitY=0.5;exitDx=0;exitDy=0;"
+        edge="1" source="input" target="compute" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+
+<!-- GOOD: all 8 connection point properties specified -->
+<mxCell id="edge-data" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;
+               strokeWidth=2;endArrow=classic;html=1;
+               exitX=1;exitY=0.5;exitDx=0;exitDy=0;
+               entryX=0;entryY=0.5;entryDx=0;entryDy=0;"
+        edge="1" source="input" target="compute" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
+</mxCell>
+```
+
+**Self-loops** also require explicit connection points. Use separated positions
+on the same face (e.g., top face: exitX=0.25, exitY=0 / entryX=0.75, entryY=0):
+
+```xml
+<!-- GOOD: self-loop with explicit exit/entry on top face -->
+<mxCell id="self-loop" value="retry"
+        style="endArrow=classic;strokeColor=#d97706;strokeWidth=1.5;html=1;curved=1;
+               exitX=0.25;exitY=0;exitDx=0;exitDy=0;
+               entryX=0.75;entryY=0;entryDx=0;entryDy=0;"
+        edge="1" source="state-wait" target="state-wait" parent="1">
+  <mxGeometry relative="1" as="geometry">
+    <Array as="points">
+      <mxPoint x="200" y="50"/>
+    </Array>
+  </mxGeometry>
+</mxCell>
+```
 
 ##### T1: Connection Point Distribution
 
@@ -1042,41 +1099,46 @@ a distinct corridor with >= 30px separation between parallel segments.
 
 After placing all edges, run this audit in two phases:
 
-**Phase A: Correctness (Rules 1-5)**
+**Phase A: Correctness (Rules 0-5)**
 
-1. **Vertical corridors**: List all waypoint x-coordinates. Flag any duplicates
+1. **Explicit connection points (T0)**: Verify ALL edges with `source`/`target`
+   attributes have explicit `exitX`, `exitY`, `entryX`, `entryY` plus
+   `exitDx=0;exitDy=0;entryDx=0;entryDy=0;` in their style strings.
+   Detached edges (sourcePoint/targetPoint) are exempt.
+2. **Vertical corridors**: List all waypoint x-coordinates. Flag any duplicates
    where the corresponding y-ranges overlap or are within 30px.
-2. **Horizontal corridors**: List all waypoint y-coordinates. Flag any
+3. **Horizontal corridors**: List all waypoint y-coordinates. Flag any
    duplicates where the corresponding x-ranges overlap or are within 30px.
-3. **Fan-in/fan-out**: For edges sharing a source or target, verify distinct
+4. **Fan-in/fan-out**: For edges sharing a source or target, verify distinct
    entry/exit corridors with >= 30px between parallel segments.
-4. **Near-miss check**: Edges within 15px of each other visually merge at
+5. **Near-miss check**: Edges within 15px of each other visually merge at
    normal zoom levels. Treat anything < 30px as an overlap.
-5. **Corner connections**: Verify no edge has BOTH exitX/exitY (or
+6. **Corner connections**: Verify no edge has BOTH exitX/exitY (or
    entryX/entryY) at 0 or 1. Face points (one coordinate at 0/1) are valid.
-6. **Last-segment length**: For each L-shaped or elbow edge, measure the
+7. **Last-segment length**: For each L-shaped or elbow edge, measure the
    distance from the last bend to the target entry point. Must be >= 30px.
-7. **Label backgrounds**: Check all standalone text cells that overlap with
+8. **Label backgrounds**: Check all standalone text cells that overlap with
    edge paths. Each must have `fillColor=#FFFFFF` (not `fillColor=none`).
 
 **Phase B: Layout Optimization (Rule 6)**
 
-8. **Edge-shape crossthrough**: Trace each edge path. If any segment passes
+9. **Edge-shape crossthrough**: Trace each edge path. If any segment passes
    through a shape it does not connect to, reroute via T2 (alternative face)
    or T4 (detached edge).
-9. **Connection point distribution**: Find shapes with 2+ edges on the same
-   face (counting both entering AND exiting edges together). Apply T1 -
-   distribute across faces or use fractional positions.
-10. **Route determinism**: In crowded areas, verify each edge has enough
+10. **Connection point distribution (T0+T1)**: Find shapes with 2+ edges on
+    the same face (counting both entering AND exiting edges together). Ensure
+    explicit connection points, then distribute across faces or use fractional
+    positions.
+11. **Route determinism**: In crowded areas, verify each edge has enough
     waypoints for a fully deterministic path (T3).
-11. **Cross-stage simplification**: Check edges spanning 2+ stages. Apply T5
+12. **Cross-stage simplification**: Check edges spanning 2+ stages. Apply T5
     - route outside stage content areas where possible.
-12. **Container tightening**: Verify container heights match content with
+13. **Container tightening**: Verify container heights match content with
     30px padding (T6). Move legend/resource boxes if containers were shrunk.
-13. **Straight arrow alignment**: For shapes connected by arrows that should
+14. **Straight arrow alignment**: For shapes connected by arrows that should
     be straight: vertical (exitX=0.5, entryX=0.5) must share center-x,
     horizontal (exitY=0.5, entryY=0.5) must share center-y (T7).
-14. **Label-edge clearance**: Verify no FIFO label or annotation box
+15. **Label-edge clearance**: Verify no FIFO label or annotation box
     overlaps an edge path. Min 15px clearance. Confirm labels are placed
     AFTER edges in XML for correct z-order (T8).
 
