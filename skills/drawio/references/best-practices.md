@@ -287,32 +287,36 @@ The waypoint should be at least 30px from the target's entry edge.
 </mxCell>
 ```
 
-#### Rule 4: Arrow Lines Invisible Under Text Boxes
+#### Rule 4: Label Text Must Not Obscure Arrow Lines
 
-When an edge passes behind a standalone text cell (label, annotation, title),
-the text cell must have an opaque background (`fillColor=#FFFFFF`) so the
-arrow line is hidden underneath. Text cells with `fillColor=none` are
-transparent and let arrow lines bleed through, creating visual clutter.
+Edge labels MUST NOT use `labelBackgroundColor`. Opaque label backgrounds
+hide the arrow line underneath the text, making connections harder to trace.
+Arrow lines should remain visible through/around label text. Position labels
+offset from the arrow path using `labelPosition` and geometry offsets.
+
+For standalone text cells that intentionally cover edge paths (phase labels,
+titles), use `fillColor=#FFFFFF` so the text cell background is opaque.
 
 ```xml
-<!-- GOOD: opaque white background hides arrow line underneath -->
-<mxCell id="label-phase" value="Phase 1: Input"
-        style="text;html=1;fontSize=14;fontStyle=1;fillColor=#FFFFFF;strokeColor=none;"
-        vertex="1" parent="1">
-  <mxGeometry x="100" y="50" width="120" height="30" as="geometry"/>
+<!-- GOOD: edge label without background - arrow line visible -->
+<mxCell id="edge-data" value="data_t"
+        style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=classic;html=1;fontSize=9;"
+        edge="1" source="m1" target="m2" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
 </mxCell>
 
-<!-- BAD: transparent background lets arrows bleed through -->
-<mxCell id="label-phase" value="Phase 1: Input"
-        style="text;html=1;fontSize=14;fontStyle=1;fillColor=none;strokeColor=none;"
-        vertex="1" parent="1">
-  <mxGeometry x="100" y="50" width="120" height="30" as="geometry"/>
+<!-- BAD: labelBackgroundColor hides the arrow line under the label -->
+<mxCell id="edge-data" value="data_t"
+        style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;strokeWidth=2;
+               endArrow=classic;html=1;fontSize=9;labelBackgroundColor=#FFFFFF;"
+        edge="1" source="m1" target="m2" parent="1">
+  <mxGeometry relative="1" as="geometry"/>
 </mxCell>
 ```
 
-For edge labels (`value` on an edge cell), set `labelBackgroundColor=#FFFFFF`
-(or the containing stage fill color) in the edge style to prevent the label
-text from overlapping the edge line itself.
+Use `fix_drawio_edges.py` to strip all `labelBackgroundColor` properties
+from existing diagrams.
 
 #### Rule 5: Dashed Box Titles Center-Aligned
 
@@ -351,10 +355,20 @@ heuristically. Different renderers (desktop app, web editor, CLI export)
 may choose different connection points, producing inconsistent routing across
 environments.
 
-**Rule**: Every edge with `source` and `target` attributes MUST specify all
-four connection point properties (`exitX`, `exitY`, `entryX`, `entryY`) plus
-zero-offset properties (`exitDx=0;exitDy=0;entryDx=0;entryDy=0;`). Detached
-edges (using `sourcePoint`/`targetPoint`) are exempt.
+**Rule**: Every non-waypoint edge with `source` and `target` attributes MUST
+specify all four connection point properties (`exitX`, `exitY`, `entryX`,
+`entryY`) plus zero-offset properties (`exitDx=0;exitDy=0;entryDx=0;
+entryDy=0;`). Detached edges (using `sourcePoint`/`targetPoint`) are exempt.
+
+**Exception - Waypoint edges**: Edges with `<Array as="points">` MUST NOT
+have explicit connection points. Draw.io's auto-router dynamically selects
+the optimal face point aligned with the first/last waypoint. Adding
+explicit coordinates overrides this and creates routing jogs.
+
+**Exception - Thin-tall shapes**: Pipeline registers and similar thin tall
+shapes (width <= 20px, height/width >= 5) must use LEFT/RIGHT face
+connections only. Top/bottom faces are only 8px wide and produce visually
+awkward routing. Use `fix_drawio_edges.py` to detect and reroute these.
 
 ```xml
 <!-- BAD: no exit/entry properties - fully auto-routed, non-deterministic -->
@@ -554,7 +568,7 @@ control over the path.
 <mxCell id="edge-nco-rotation" value="sin/cos"
         style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;
                strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
-               fontSize=9;fontColor=#4f46e5;labelBackgroundColor=#FFFFFF;"
+               fontSize=9;fontColor=#4f46e5;"
         edge="1" parent="1">
   <mxGeometry relative="1" as="geometry">
     <Array as="points">
@@ -592,7 +606,7 @@ AFTER (2 waypoints, routes below all stage content):
 <mxCell id="edge-cordic-freqout" value="fineCfoFreq"
         style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#e03131;
                strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
-               fontSize=9;fontColor=#e03131;labelBackgroundColor=#FFFFFF;"
+               fontSize=9;fontColor=#e03131;"
         source="compute-cordic" target="io-freq-out" edge="1" parent="1">
   <mxGeometry relative="1" as="geometry">
     <Array as="points">
@@ -938,9 +952,11 @@ Every Draw.io XML must start with these two root cells:
 | Missing `as="geometry"` | Geometry not applied | `<mxGeometry ... as="geometry"/>` is required |
 | Container without `container=1` | Child cells not grouped | Add `container=1;` to parent style |
 | Text outside visible canvas | Content clipped or invisible | Keep all elements within positive x,y coordinates |
-| Corner exit/entry on edges | Diagonal stub in orthogonal routing | Use face points (one coord at 0/1). Distribute (0.25, 0.75) when sharing |
+| Corner exit/entry on non-waypoint edges | Diagonal stub in orthogonal routing | Use face points (one coord at 0/1). Distribute (0.25, 0.75) when sharing |
 | Short last segment (< 30px) | Arrowhead overlaps previous segment | Add waypoint to push bend >= 30px from target entry |
-| Text label with `fillColor=none` over edge path | Arrow line bleeds through label | Set `fillColor=#FFFFFF` on text cell |
+| Text label with `fillColor=none` over edge path | Arrow line bleeds through label | Set `fillColor=#FFFFFF` on standalone text cells that intentionally cover edges |
+| Edge label with `labelBackgroundColor` | Arrow line hidden under label text | Remove `labelBackgroundColor` from edge styles (Rule 4) |
+| Top/bottom connection on pipeline register | Awkward 8px-wide routing on narrow face | Use LEFT/RIGHT face only for thin-tall shapes (width <= 20px) |
 | Multiple edges at same face midpoint | Overlapping edges at connection point | Distribute across faces; use 0.25/0.75 when sharing (T1) |
 | Edge crosses through unrelated shape | Arrow visually pierces a block | Reroute via alternative face (T2) or use detached edge (T4) |
 | Auto-routing in crowded area | Different renderers choose different paths | Add explicit waypoints for every segment (T3) |
@@ -1101,10 +1117,10 @@ After placing all edges, run this audit in two phases:
 
 **Phase A: Correctness (Rules 0-5)**
 
-1. **Explicit connection points (T0)**: Verify ALL edges with `source`/`target`
-   attributes have explicit `exitX`, `exitY`, `entryX`, `entryY` plus
-   `exitDx=0;exitDy=0;entryDx=0;entryDy=0;` in their style strings.
-   Detached edges (sourcePoint/targetPoint) are exempt.
+1. **Explicit connection points (T0)**: Verify non-waypoint edges with
+   `source`/`target` attributes have explicit `exitX`, `exitY`, `entryX`,
+   `entryY` plus `exitDx=0;exitDy=0;entryDx=0;entryDy=0;`. Verify
+   waypoint edges do NOT have these properties. Detached edges exempt.
 2. **Vertical corridors**: List all waypoint x-coordinates. Flag any duplicates
    where the corresponding y-ranges overlap or are within 30px.
 3. **Horizontal corridors**: List all waypoint y-coordinates. Flag any
@@ -1113,12 +1129,15 @@ After placing all edges, run this audit in two phases:
    entry/exit corridors with >= 30px between parallel segments.
 5. **Near-miss check**: Edges within 15px of each other visually merge at
    normal zoom levels. Treat anything < 30px as an overlap.
-6. **Corner connections**: Verify no edge has BOTH exitX/exitY (or
-   entryX/entryY) at 0 or 1. Face points (one coordinate at 0/1) are valid.
+6. **Corner connections**: Verify no non-waypoint edge has BOTH exitX/exitY
+   (or entryX/entryY) at 0 or 1. Face points (one coordinate at 0/1) are
+   valid. Exception: rhombus/diamond shapes where bounding-box corners map
+   to face midpoints. Use `fix_drawio_edges.py --audit` for detection.
 7. **Last-segment length**: For each L-shaped or elbow edge, measure the
    distance from the last bend to the target entry point. Must be >= 30px.
 8. **Label backgrounds**: Check all standalone text cells that overlap with
    edge paths. Each must have `fillColor=#FFFFFF` (not `fillColor=none`).
+   Check that NO edge style contains `labelBackgroundColor` (Rule 4).
 
 **Phase B: Layout Optimization (Rule 6)**
 

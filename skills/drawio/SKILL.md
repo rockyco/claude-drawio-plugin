@@ -95,6 +95,10 @@ For non-straight routing (L-shaped, around obstacles):
 - `Array as="points"` - Explicit waypoints for manual routing
 - Orthogonal routing handles obstacle avoidance automatically
 
+**No degenerate waypoints**: Every mxPoint in the `<Array as="points">`
+must differ from its neighbors by at least 1px in either x or y.
+Consecutive identical mxPoints produce no routing effect and are noise.
+
 **Edge clearance**: When multiple edges share waypoint corridors (same x for
 vertical segments, same y for horizontal), offset by >= 30px to prevent visual
 merging. See `references/best-practices.md` Section 9 for full audit checklist.
@@ -109,7 +113,7 @@ find a clean path, use a detached edge with explicit coordinates instead of
 <mxCell id="edge-nco-rotation" value="sin/cos"
         style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#4f46e5;
                strokeWidth=1;dashed=1;endArrow=block;endFill=1;html=1;
-               fontSize=9;labelBackgroundColor=#FFFFFF;"
+               fontSize=9;"
         edge="1" parent="1">
   <mxGeometry relative="1" as="geometry">
     <Array as="points">
@@ -136,26 +140,56 @@ Rule 0 is the foundational requirement. Violation of rules 0-5 produces a
 diagram that looks broken when rendered. Rule 6 is a post-generation
 optimization pass for layout quality.
 
-0. **Explicit Connection Points (Mandatory)** - Every edge with `source` and
+0a. **Explicit Connection Points for Non-Waypoint Edges** - Every edge
+   WITHOUT manual waypoints (`<Array as="points">`) that has `source` and
    `target` attributes MUST specify ALL FOUR connection point properties in
    its style: `exitX`, `exitY`, `entryX`, `entryY`, plus zero-offsets
    `exitDx=0;exitDy=0;entryDx=0;entryDy=0;`. Omitting any property causes
-   auto-routing, which produces different paths on different renderers and
-   may cross shapes or overlap edges. Self-loops (source == target) also
-   require explicit exit/entry. Detached edges (using sourcePoint/targetPoint
-   instead of source/target) are exempt.
+   auto-routing, which produces different paths on different renderers.
+   Self-loops (source == target) also require explicit exit/entry. Detached
+   edges (using sourcePoint/targetPoint instead of source/target) are exempt.
    ```
    GOOD: exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;
    BAD:  exitX=1;exitY=0.5;  (missing exitDx/exitDy/entryX/entryY/entryDx/entryDy)
    BAD:  (no exit/entry properties at all - fully auto-routed)
    ```
 
+0b. **No Explicit Connection Points for Waypoint Edges** - Every edge WITH
+   manual waypoints (`<Array as="points">`) MUST NOT have explicit
+   `exitX`/`exitY`/`entryX`/`entryY` or Dx/Dy properties. Draw.io's
+   auto-router dynamically selects the optimal connection point aligned with
+   the first/last waypoint. Adding explicit connection points overrides this
+   and creates routing jogs where the edge leaves/enters a shape in the
+   wrong direction before correcting course toward the waypoint.
+   ```
+   GOOD (waypoint edge): edgeStyle=orthogonalEdgeStyle;strokeColor=#1971c2;strokeWidth=2;html=1;
+   BAD  (waypoint edge): exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.49;...
+   ```
+   **Waypoint face separation**: When 2+ waypoint edges connect to the SAME
+   face of a shape, their first/last waypoints (the one nearest the shape)
+   must differ by >= 30px in the perpendicular axis. This makes the
+   auto-router pick different face connection points naturally, without
+   needing explicit CPs.
+   ```
+   Shape left face spans Y=[120, 260]. Three edges enter from the left:
+   BAD:  edge-A last WP (140, 190), edge-B last WP (150, 190), edge-C last WP (140, 220)
+         Auto-router stacks A and B at ~same Y, C barely separated
+   GOOD: edge-A last WP (140, 155), edge-B last WP (150, 190), edge-C last WP (140, 225)
+         Auto-router distributes entries across the face span
+   ```
+   Perpendicular axis: Y for left/right faces, X for top/bottom faces.
+   The >= 30px spacing ensures the auto-router resolves to visually
+   distinct face points.
+
 1. **Face Points Only (Corners Forbidden)** - Edge endpoints (`exitX/exitY`,
    `entryX/entryY`) must be ON a face: one coordinate at 0 or 1, the other
    anywhere in [0,1]. Default to midpoints (0.5). When 2+ edges share the
    same face - counting BOTH entering and exiting edges together -
    distribute positions (0.25, 0.5, 0.75) instead of stacking at
-   0.5. This includes the mixed case where one edge enters and another
+   0.5. For waypoint edges sharing a face, do NOT add explicit CPs -
+   instead, position their nearest waypoints >= 30px apart in the
+   perpendicular axis so the auto-router naturally separates them (Rule 0b).
+   This includes the mixed case where one edge enters and another
    exits the same face at the same Y (or X) coordinate. Never use
    corners where BOTH coordinates are 0 or 1 - orthogonal
    routing creates a diagonal stub from the corner that looks broken.
@@ -190,14 +224,15 @@ optimization pass for layout quality.
                                                          v
    ```
 
-4. **Arrow Lines Invisible Under Text Boxes** - Edge labels using
-   `labelBackgroundColor` must match the canvas background (`#FFFFFF`) or the
-   containing stage fill color. For edges passing behind standalone text/label
-   cells, ensure the text cell has `fillColor=#FFFFFF` (not `fillColor=none`)
-   so the arrow line is hidden underneath.
+4. **Label Text Must Not Obscure Arrow Lines** - Edge labels MUST NOT use
+   `labelBackgroundColor`. Arrow lines should remain visible through/around
+   label text. Use perpendicular label offsets instead: add
+   `<mxPoint y="-15" as="offset" />` inside the edge's mxGeometry to shift
+   labels above the arrow line. For standalone text cells that intentionally
+   cover edge paths (phase labels, titles), use `fillColor=#FFFFFF`.
    ```
-   GOOD: style="text;html=1;fillColor=#FFFFFF;strokeColor=none;"
-   BAD:  style="text;html=1;fillColor=none;strokeColor=none;"
+   GOOD: style="endArrow=classic;strokeColor=#1971c2;fontSize=9;html=1;"
+   BAD:  style="endArrow=classic;strokeColor=#1971c2;fontSize=9;labelBackgroundColor=#FFFFFF;html=1;"
    ```
 
 5. **Dashed Box Titles Center-Aligned** - DATAFLOW stage border labels and any
@@ -212,8 +247,12 @@ optimization pass for layout quality.
       via an alternative face or add waypoints to go around the obstacle.
    2. **Connection point distribution**: Find shapes with 2+ edges on the
       same face, counting both entering and exiting edges together.
-      Distribute entry/exit points across faces. If forced to
-      share a face, use positions (0.25, 0.5, 0.75) instead of all at 0.5.
+      Distribute entry/exit points across faces. If forced to share a face:
+      - **Non-waypoint edges**: use positions (0.25, 0.5, 0.75) via explicit CPs
+      - **Waypoint edges**: reposition their nearest waypoints >= 30px apart
+        in the perpendicular axis (Rule 0b) - never add explicit CPs
+      - **Mixed groups**: distribute non-waypoint edges via CPs; reposition
+        waypoint edges via waypoint spacing
    3. **Route determinism**: In crowded areas where auto-routing produces
       ambiguous paths, add explicit waypoints so every segment is
       deterministic. The auto-router should only handle the first/last
@@ -314,6 +353,14 @@ to midpoints (0.5). When 2+ edges share the same face, distribute them using
 fractional positions (0.25, 0.75) to prevent overlap. Corners are acceptable
 for shapes (e.g., container nesting) but never for edge connection points.
 
+**Waypoint edges**: DO NOT set connection points on waypoint edges.
+Draw.io's auto-router dynamically selects the optimal face point that
+minimizes the path to the first/last waypoint. Explicit coordinates
+override this and create routing jogs. Use `fix_drawio_edges.py` to
+strip explicit connection points from waypoint edges. When 2+ waypoint
+edges share a face, separate them by positioning their nearest waypoints
+>= 30px apart in the perpendicular axis (see Rule 0b).
+
 For ellipses, same normalized coordinates apply to the ellipse bounding box.
 
 ## FPGA Component Styles
@@ -378,6 +425,13 @@ rounded=0;fillColor=#99e9f2;strokeColor=#0c8599;fontColor=#0c8599;fontStyle=1;fo
 ```
 rounded=0;fillColor=#e9ecef;strokeColor=#868e96;fontColor=#495057;fontSize=9;html=1;
 ```
+
+**Pipeline Register Connection Rule**: Pipeline registers are thin tall
+rectangles (width <= 20px, height/width >= 5). Arrows MUST connect to
+their LEFT or RIGHT face only (`exitX=0`/`exitX=1`, `entryX=0`/`entryX=1`
+with Y=0.5). NEVER connect to top (Y=0) or bottom (Y=1) faces - the 8px
+connection surface produces visually awkward routing. The tool
+`fix_drawio_edges.py` detects and reroutes these automatically.
 
 **FIFO Indicator:**
 ```
@@ -558,8 +612,8 @@ When generating a draw.io diagram:
 3. **Place I/O ports first** - Ellipses at left/right edges
 4. **Add main blocks** - Position on a 10px grid, left-to-right data flow
 5. **Add stage borders** - Dashed rectangles behind groups of blocks (use lower z-order by placing them earlier in XML)
-6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). EVERY edge MUST specify `exitX/exitY/exitDx=0/exitDy=0` AND `entryX/entryY/entryDx=0/entryDy=0` (Rule 0). Use face midpoints as default (Rule 1). Ensure last segment >= 30px
-7. **Audit edge quality** - Run all 7 Edge Quality Rules: (0) explicit connection points on every edge, (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening, center alignment, label-edge clearance). Verify z-order: annotation labels AFTER edges in XML
+6. **Connect with edges** - Data bus (solid blue), control (dashed red), memory (dashed indigo). Non-waypoint edges MUST specify `exitX/exitY/exitDx=0/exitDy=0` AND `entryX/entryY/entryDx=0/entryDy=0` (Rule 0a). Waypoint edges MUST NOT have explicit connection points (Rule 0b). Use face midpoints as default (Rule 1). Ensure last segment >= 30px
+7. **Audit edge quality** - Run all 7 Edge Quality Rules: (0a) explicit connection points on non-waypoint edges, (0b) no explicit connection points on waypoint edges, (1) face points only, corners forbidden, distribute when shared, (2) no arrow overlap (>= 30px clearance), (3) last segment >= 30px, (4) label backgrounds match canvas, (5) stage titles center-aligned, (6) layout improvement pass (crossthrough, distribution, determinism, simplification, tightening, center alignment, label-edge clearance). Verify z-order: annotation labels AFTER edges in XML
 8. **Add labels** - Title, subtitle, bit-width annotations, phase labels
 9. **Add resource summary** - Bottom-left box with DSP/BRAM/LUT/FF
 10. **Add legend** - Bottom-right box with arrow/block color key
