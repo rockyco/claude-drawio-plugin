@@ -228,7 +228,8 @@ optimization pass for layout quality.
    `labelBackgroundColor`. Arrow lines should remain visible through/around
    label text. Use perpendicular label offsets instead: add
    `<mxPoint y="-15" as="offset" />` inside the edge's mxGeometry to shift
-   labels above the arrow line. For standalone text cells that intentionally
+   labels above the arrow line. For vertical arrow segments, use
+   `<mxPoint x="10" y="0" as="offset" />` instead. For standalone text cells that intentionally
    cover edge paths (phase labels, titles), use `fillColor=#FFFFFF`.
    ```
    GOOD: style="endArrow=classic;strokeColor=#1971c2;fontSize=9;html=1;"
@@ -240,11 +241,29 @@ optimization pass for layout quality.
    The DATAFLOW Stage Border style already includes `align=center;`, but
    standalone title text cells placed inside stage borders must also include it.
 
-6. **Layout Improvement Pass** - After initial placement and edge routing,
+6. **Straight-Arrow Alignment Principle** - Arrows should be straight lines
+   whenever geometrically possible. This is the single most impactful layout
+   quality rule. Before adding waypoints or accepting jogged routing, check
+   whether repositioning the connected shapes would make the arrow straight:
+   - **Horizontal arrows**: All connected shapes must share center-y.
+     Formula: `shape.y = target_center_y - shape.height / 2`
+   - **Vertical arrows**: All connected shapes must share center-x.
+     Formula: `shape.x = target_center_x - shape.width / 2`
+   - **Inherently non-straight arrows** (acceptable): fan-out from one source
+     to N targets at different y positions, fan-in from N sources at different
+     y positions to one target, and cross-stage routing in DATAFLOW diagrams.
+     These use precision Y/X positioning (see Pipeline Register Connection Rule)
+     or waypoint routing.
+   When pipeline registers define a horizontal corridor (all sharing center_y),
+   every processing block in that corridor must also share that center_y.
+
+7. **Layout Improvement Pass** - After initial placement and edge routing,
    run this 7-step audit to optimize layout quality:
    1. **Edge-shape crossthrough**: Trace each edge path segment by segment.
       If any segment crosses through a shape it does not connect to, reroute
       via an alternative face or add waypoints to go around the obstacle.
+      If data arrows repeatedly cross storage elements, relocate the storage
+      elements rather than adding waypoints - the layout is wrong.
    2. **Connection point distribution**: Find shapes with 2+ edges on the
       same face, counting both entering and exiting edges together.
       Distribute entry/exit points across faces. If forced to share a face:
@@ -257,9 +276,11 @@ optimization pass for layout quality.
       ambiguous paths, add explicit waypoints so every segment is
       deterministic. The auto-router should only handle the first/last
       few pixels from exit/entry points to the nearest waypoint.
-   4. **Cross-stage simplification**: For edges crossing multiple stages,
-      prefer routing OUTSIDE stage content areas (above or below all
-      blocks). This produces simpler routes with fewer waypoints.
+   4. **Cross-stage simplification**: Edges crossing 2+ stages must route
+      OUTSIDE all stage boxes entirely (above or below the dashed borders,
+      not just above the blocks inside). Keep >= 20px from the nearest
+      stage box edge. Bypass streams route below; direct outputs from
+      middle stages route above.
    5. **Container tightening**: Set container height to
       `max_child_bottom_y - container_y + 30px`. Adjust legend position
       to match the tightened layout.
@@ -428,10 +449,14 @@ rounded=0;fillColor=#e9ecef;strokeColor=#868e96;fontColor=#495057;fontSize=9;htm
 
 **Pipeline Register Connection Rule**: Pipeline registers are thin tall
 rectangles (width <= 20px, height/width >= 5). Arrows MUST connect to
-their LEFT or RIGHT face only (`exitX=0`/`exitX=1`, `entryX=0`/`entryX=1`
-with Y=0.5). NEVER connect to top (Y=0) or bottom (Y=1) faces - the 8px
-connection surface produces visually awkward routing. The tool
-`fix_drawio_edges.py` detects and reroutes these automatically.
+their LEFT or RIGHT face only (`exitX=0`/`exitX=1`, `entryX=0`/`entryX=1`).
+NEVER connect to top (Y=0) or bottom (Y=1) faces - the 8px connection
+surface produces visually awkward routing. When a pipeline register fans
+out to N targets at different y positions, compute each connection's Y
+fraction as `(target_center_y - preg_y) / preg_height` and add
+`entryPerimeter=0`/`exitPerimeter=0` to the connection style for exact
+positioning. The tool `fix_drawio_edges.py` detects top/bottom violations
+and reroutes them automatically.
 
 **FIFO Indicator:**
 ```
@@ -495,6 +520,10 @@ Shows module topology with data/control streams and FIFO depths.
 Shows internal DATAFLOW stages (EXTRACT/COMPUTE/APPLY or TMCS 4-stage).
 
 **Layout**: Left-to-right stages in dashed borders. Internal FIFOs between stages.
+All stages share the same top y. Max height ratio between stages: 1.5x.
+Arrows that skip stages route OUTSIDE all stage boxes: above for direct outputs
+from middle stages, below for bypass/passthrough streams. Keep >= 20px clearance
+from the nearest stage box edge.
 
 **Canvas**: `pageWidth="1200" pageHeight="600"`
 
@@ -541,7 +570,7 @@ Shows finite state machine transitions.
 
 Detailed datapath diagram showing FPGA primitives, pipeline stages, and data flow with bit-width annotations.
 
-**Layout**: Left-to-right data flow. I/O ports at edges. Pipeline stages separated by pipeline register columns. Storage row below main datapath.
+**Layout**: Left-to-right data flow. I/O ports at edges. Pipeline stages separated by pipeline register columns. Storage elements (BRAMs, ROMs) directly above their computation consumer with matching center-x, vertical coefficient arrows entering the consumer's top face - this keeps horizontal data corridors clear. When a block receives fan-in from N sources, position it at the vertical midpoint of those sources: `block_center_y = (source_top_center_y + source_bottom_center_y) / 2`. When pipeline registers define the main datapath corridor, all processing blocks connected by horizontal arrows within that corridor must share the same center-y as the pipeline registers.
 
 **Canvas**: `pageWidth="1400" pageHeight="700"` (increase for complex modules)
 
